@@ -40,8 +40,8 @@ snapBtn.addEventListener('click', snapPhoto);
 uploadBtn.addEventListener('click', uploadSnapshot);
 
 sendBtn.disabled = true;
-// snapBtn.disabled = true;
-// uploadBtn.disabled = true;
+snapBtn.disabled = true;
+uploadBtn.disabled = true;
 dataChannelSend.disabled = true;
 
 function sendClickEvent(){
@@ -408,9 +408,8 @@ function onReceiveChannelStateChange() {
 }
 
 ///////////////////////////////////////////////////////
-// Function for Loggin
+// Function for Logging
 ///////////////////////////////////////////////////////
-
 function trace(text) {
   if (text[text.length - 1] === '\n') {
     text = text.substring(0, text.length - 1);
