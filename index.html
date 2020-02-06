@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <title>Realtime communication with WebRTC</title>
+
+  <link rel="stylesheet" href="css/main.css" />
+
+</head>
+
+<body>
+  <form method="post" accept-charset="UTF-8" name="uploadForm">
+    <input name="userid" type="hidden" id="userid">
+    <input name="imagefile" type="hidden" id="imagefile">
+  </form>
+
+  <div id="title">
+  <h1>Eyelog Remote Monitoring Board</h1>
+  </div> 
+
+  <!-- menu -->
+  <div id="button-menu">
+    <button id="snapBtn">Snap</button>
+    <button id="uploadBtn">Upload</button>
+  </div>
+  <hr>
+  <!-- videos -->
+  <div id="videos">
+    <div class="grid-container">
+      <!-- local column -->
+      <div class="grid-item">
+        <h3>Local</h3>
+        <video id="localVideo" autoplay muted></video>
+      </div>
+      <!-- remote column -->
+      <div class="grid-item">
+        <h3>Remote</h3>
+        
+        <video id="remoteVideo" autoplay></video>
+       </div>
+       <div class="grid-item">
+        <h3>Snapshot</h3>
+        <canvas id="photo"></canvas>
+       </div>
+    </div>
+  </div>
+  <hr>
+  <!-- text -->
+  <div class="recieveTextDiv">
+    <textarea id="dataChannelReceive" disabled></textarea>
+  </div>
+
+  <!-- sendTextArea -->
+  <div class="sendTextDivContainer">
+    <div>
+      <input id="dataChannelSend"></input>
+    </div>
+    <div>
+      <button id="sendBtn">Send</button>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+  <script src="js/main.js"></script>
+</body>
+
+</html>
