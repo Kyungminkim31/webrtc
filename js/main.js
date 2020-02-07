@@ -1,5 +1,11 @@
 'use strict';
 
+const mediaSource = new MediaSource();
+mediaSource.addEventListener('source', handleSourceOpen, false);
+let recordedBlobs;
+let mediaRecorder;
+let sourceBuffer;
+
 var isChannelReady = false;
 var isInitiator = false;
 var isStarted = false;
@@ -8,7 +14,9 @@ var pc;
 var remoteStream;
 var turnReady;
 
-var sendBtn = document.querySelector('button#sendBtn');
+var recordedVideo = document.getElementById('recordedVideo');
+var sendBtn = document.getElementById('sendBtn');
+var playBtn = document.getElementById('playBtn');
 var snapBtn = document.getElementById('snapBtn');
 var uploadBtn = document.getElementById('uploadBtn');
 var dataChannelSend = document.querySelector('input#dataChannelSend');
@@ -35,21 +43,20 @@ var sdpConstraints = {
   offerToReceiveVideo: true
 };
 
-sendBtn.addEventListener('click', sendClickEvent);
-snapBtn.addEventListener('click', snapPhoto);
-uploadBtn.addEventListener('click', uploadSnapshot);
+//////////////////////////////////////////////////
+// Event 처리
+//////////////////////////////////////////////////
+playBtn.addEventListener('click', () => {
+  console.log('Play button is clicked...');
+  const superBuffer = new Blob(recordedBlobs, {type: 'video/webm'});
+  recordedVideo.src = null;
+  recordedVideo.srcObject = null;
+  recordedVideo.src = window.URL.createObjectURL(superBuffer);
+  recordedVideo.controls = true;
+  recordedVideo.play();
+});
 
-sendBtn.disabled = true;
-snapBtn.disabled = true;
-uploadBtn.disabled = true;
-dataChannelSend.disabled = true;
-
-function sendClickEvent(){
-  sendData();
-  dataChannelSend.value ='';
-}
-
-function sendData(){
+sendBtn.addEventListener('click', ()=>{
   var data = dataChannelSend.value;
   try{
     sendChannel.send(data);
@@ -57,21 +64,18 @@ function sendData(){
   } catch(err){
     console.log('Something is going to be wrong...' + err.name);
   }
+    trace('sent data : '+data);
+    dataChannelSend.value ='';
+});
 
-  trace('sent data : '+data);
-  
-}
-
-function snapPhoto(){
+snapBtn.addEventListener('click', ()=>{
   photoContext.drawImage(remoteVideo, 0, 0, photo.width, photo.height);
   uploadBtn.disabled = false;
   photo.style.visibility = "visible"; 
-  trace('draw image on canvas...');
-}
-
+  trace('draw image on canvas...');  
+});
 var xhr;
-
-function uploadSnapshot(){
+uploadBtn.addEventListener('click', ()=>{
   trace('uploadSnampshot...');
   var dataURL = photo.toDataURL('image/jpeg');
   document.getElementById('userid').value = '1202';
@@ -95,6 +99,82 @@ function uploadSnapshot(){
   xhr.onload = function(){};
 
   xhr.send(fd);
+});
+recordBtn.addEventListener('click', beginRecording);
+stopBtn.addEventListener('click', stopRecording);
+
+sendBtn.disabled = true;
+snapBtn.disabled = true;
+uploadBtn.disabled = true;
+dataChannelSend.disabled = true;
+stopBtn.disabled = true;
+
+function handleSourceOpen(event) {
+  console.log('MediaSource opened');
+  sourceBuffer = mediaSource.addSourceBuffer('video/webm; codecs="vp8"');
+  console.log('Source buffer: ', sourceBuffer);
+}
+
+function handleDataAvailable(event){
+  console.log('handleDataAvailable', event);
+  if(event.data && event.data.size > 0){
+    recordedBlobs.push(event.data);
+  }
+}
+
+function beginRecording(){
+  trace('>>>>> on Record <<<<<');
+  stopBtn.disabled = false;
+  // stopBtn.style.visibility = 'visible';
+
+  recordedBlobs = [];
+  let options = {mimeType: 'video/webm;codecs=vp9'};
+  if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+    console.error(`${options.mimeType} is not Supported`);
+    // errorMsgElement.innerHTML = `${options.mimeType} is not Supported`;
+    options = {mimeType: 'video/webm;codecs=vp8'};
+    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+      console.error(`${options.mimeType} is not Supported`);
+      // errorMsgElement.innerHTML = `${options.mimeType} is not Supported`;
+      options = {mimeType: 'video/webm'};
+      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+        console.error(`${options.mimeType} is not Supported`);
+        // errorMsgElement.innerHTML = `${options.mimeType} is not Supported`;
+        options = {mimeType: ''};
+      }
+    }
+  }
+
+  try {
+    mediaRecorder = new MediaRecorder(localStream, options);
+  } catch (e) {
+      console.error('Exception while creating MediaRecorder:', e);
+      // errorMsgElement.innerHTML = 'Exception while creating MediaRecorder:  ${JSON.stringify(e)}`;
+      return;
+  }
+
+  console.log('Created MediaRecorder', mediaRecorder, 'with options', options);
+  mediaRecorder.onstop = (event) => {
+    console.log('Recorder stopped:', event);
+    console.log('Recorded Blobs: ', recordedBlobs);
+  };
+  mediaRecorder.ondataavailable = handleDataAvailable;
+  mediaRecorder.start(10);
+  console.log('MediaRecorder started', mediaRecorder);
+}
+
+function stopRecording(){
+  trace('<<<< Stop recording >>>>');
+  stopBtn.disabled = true;
+  // stopBtn.style.visibility = 'hidden';
+  mediaRecorder.stop();
+}
+
+function snapPhoto(){
+  photoContext.drawImage(remoteVideo, 0, 0, photo.width, photo.height);
+  uploadBtn.disabled = false;
+  photo.style.visibility = "visible"; 
+  trace('draw image on canvas...');
 }
 
 function viewMessage(){
@@ -107,7 +187,6 @@ function viewMessage(){
         alert('Uploading is sucess.');
       }
     }
-    
   }
 }
 
@@ -240,6 +319,8 @@ window.onbeforeunload = function() {
   sendMessage('bye');
 };
 
+/////////////////////////////////////////////////////////
+//      Initialization and Event about DataChannel     //
 /////////////////////////////////////////////////////////
 function initDataChannel(){
     // 클라이언트로부터 전송해오는 DataChannel 콜백함수를 지정한다.
