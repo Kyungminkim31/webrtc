@@ -21,6 +21,9 @@
 
   <!-- menu -->
   <div id="button-menu">
+    <button id="playBtn">play</button>
+    <button id="stopBtn">Stop</button>
+    <button id="recordBtn">Record</button>
     <button id="snapBtn">Snap</button>
     <button id="uploadBtn">Upload</button>
   </div>
@@ -60,6 +63,8 @@
       <button id="sendBtn">Send</button>
     </div>
   </div>
+
+  <video id="recordedVideo"></video>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
