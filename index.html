@@ -2,73 +2,97 @@
 <html>
 
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Eyelog Web Monitoring System">
+  <meta name="keywords" content="HTML,CSS,XML,JavaScript">
+  <meta name="author" content="Kyungmin Kim">
 
-  <title>Realtime communication with WebRTC</title>
-
+  <title>WebRTC Monitoring System</title>
   <link rel="stylesheet" href="css/main.css" />
 
 </head>
 
 <body>
   <form method="post" accept-charset="UTF-8" name="uploadForm">
-    <input name="userid" type="hidden" id="userid">
-    <input name="imagefile" type="hidden" id="imagefile">
+	<input name="userid" type="hidden" id="userid">
+	<input name="imagefile" type="hidden" id="imagefile">
   </form>
 
   <div id="title">
   <h1>Eyelog Remote Monitoring Board</h1>
+  <p>Web rtc web client</p>
   </div> 
-
+  <div id="statusContainer">
+	<span id="statusSpan">
+	  Container
+	</span> 
+	<div id="scrollCanvas">
+	</div>
+  </div>
   <!-- menu -->
-  <div id="button-menu">
-    <button id="playBtn">play</button>
-    <button id="stopBtn">Stop</button>
-    <button id="recordBtn">Record</button>
-    <button id="snapBtn">Snap</button>
-    <button id="uploadBtn">Upload</button>
+  <div id="buttonMenu">
+	<button id="playBtn">Play</button>
+	<button id="stopBtn">Stop</button>
+	<button id="recordBtn">Record</button>
+	<button id="snapBtn">Snap</button>
+	<button id="uploadBtn">Upload</button>
   </div>
   <hr>
   <!-- videos -->
   <div id="videos">
-    <div class="grid-container">
-      <!-- local column -->
-      <div class="grid-item">
-        <h3>Local</h3>
-        <video id="localVideo" autoplay muted></video>
-      </div>
-      <!-- remote column -->
-      <div class="grid-item">
-        <h3>Remote</h3>
-        
-        <video id="remoteVideo" autoplay></video>
-       </div>
-       <div class="grid-item">
-        <h3>Snapshot</h3>
-        <canvas id="photo"></canvas>
-       </div>
-    </div>
+  	<h2>Previews </h2>
+	<div class="gridContainer">
+	  <!-- local column -->
+	  <div class="gridItem">
+		<span>Local</span>
+		<video id="localVideo" autoplay muted></video>
+	  </div>
+	  <!-- remote column -->
+	  <div class="gridItem">
+		<span>Remote</span>
+		<video id="remoteVideo" autoplay></video>
+	   </div>
+	   <div class="gridItem">
+		<span>Snapshot</span>
+		<canvas id="photo"></canvas>
+	   </div>
+	   <div class="gridItem">
+	   	<span>Record Preview</span>
+	   	<video id="recordedVideo"></video>
+	   </div>
+	</div>
   </div>
   <hr>
   <!-- text -->
   <div class="recieveTextDiv">
-    <textarea id="dataChannelReceive" disabled></textarea>
+	<textarea id="dataChannelReceive" disabled></textarea>
   </div>
 
   <!-- sendTextArea -->
   <div class="sendTextDivContainer">
-    <div>
-      <input id="dataChannelSend"></input>
-    </div>
-    <div>
-      <button id="sendBtn">Send</button>
-    </div>
+	<div>
+	  <input id="dataChannelSend"></input>
+	</div>
+	<div>
+	  <button id="sendBtn">Send</button>
+	</div>
   </div>
 
-  <video id="recordedVideo"></video>
+  <img id="test" src="" style="width=100%"></img>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
   <script src="js/main.js"></script>
+
+  <div id="footer">
+	<p>
+	  © KKim Studio 2020
+	</p>
+  <p>
+   a picture by <a style="background-color:black;color:white;text-decoration:none;padding:4px 6px;font-family:-apple-system, BlinkMacSystemFont, &quot;San Francisco&quot;, &quot;Helvetica Neue&quot;, Helvetica, Ubuntu, Roboto, Noto, &quot;Segoe UI&quot;, Arial, sans-serif;font-size:12px;font-weight:bold;line-height:1.2;display:inline-block;border-radius:3px" href="https://unsplash.com/@ntidbury?utm_medium=referral&amp;utm_campaign=photographer-credit&amp;utm_content=creditBadge" target="_blank" rel="noopener noreferrer" title="Download free do whatever you want high-resolution photos from Niklas Tidbury"><span style="display:inline-block;padding:2px 3px"><svg xmlns="http://www.w3.org/2000/svg" style="height:12px;width:auto;position:relative;vertical-align:middle;top:-2px;fill:white" viewBox="0 0 32 32"><title>unsplash-logo</title><path d="M10 9V0h12v9H10zm12 5h10v18H0V14h10v9h12v-9z"></path></svg></span><span style="display:inline-block;padding:2px 3px">Niklas Tidbury</span></a>
+  </p>
+  </div>
 </body>
 
 </html>
