@@ -8,6 +8,7 @@ let sourceBuffer;
 
 let tmpPicture, tmpContext;
 let preRollPictures;
+let postPickingPictures;
 
 const MAX_LIMIT = 5;
 
@@ -127,9 +128,46 @@ recordBtn.disabled = false;
 /////////////////////////////////////
 // setting functions 
 /////////////////////////////////////
-// 픽업 이벤트 발생전까지 5개의 스냅샵을 유지한다.
-function makePreRecordedpreRollPictures() {
 
+var takePicture = function (mode, sourceVideo, destArray){
+
+  console.log('picture mode : ', mode);
+
+  tmpPicture = document.createElement('canvas');
+  tmpContext = tmpPicture.getContext('2d');
+
+  tmpPicture.width = tmpContext.width = sourceVideo.videoWidth;
+  tmpPicture.height = tmpContext.height = sourceVideo.videoHeight;
+
+  tmpContext.drawImage(sourceVideo, 0, 0, tmpPicture.width, tmpPicture.height);
+
+  if(destArray.length === MAX_LIMIT){
+    destArray.shift();
+  }
+  destArray.push(tmpPicture);
+
+}
+
+// 픽업 이벤트 후 5개의 스냅샷을 유지한다.
+function snapPickingPictures(){
+
+  tmpPicture = document.createElement('canvas');
+  tmpContext = tmpPicture.getContext('2d');
+
+  tmpPicture.width = tmpContext.width = localVideo.videoWidth;
+  tmpPicture.height = tmpContext.height = localVideo.videoHeight;
+
+  tmpContext.drawImage(localVideo, 0, 0, tmpPicture.width, tmpPicture.height);
+
+  if(postPickingPictures.length === MAX_LIMIT) {
+    postPickingPictures.shift();
+  }
+  postPickingPictures.push(tmpPicture);
+
+}
+
+// 픽업 이벤트 발생전까지 5개의 스냅샵을 유지한다.
+function takePreRollPictures() {
   tmpPicture = document.createElement('canvas');
   tmpContext = tmpPicture.getContext('2d');
 
@@ -149,18 +187,38 @@ function makePreRecordedpreRollPictures() {
 }
 
 // 지정된 사이즈 만큼의 Snapshot을 만들어 낸다.
-function drawPhotos(){  
-  for(var i = 0; i < preRollPictures.length;i++){
-	preRollPictures[i].style.visibility = 'visible';
-	preRollPictures[i].style.width ="120px";
-	preRollPictures[i].style.height ="auto";
-	preRollPictures[i].style.padding ="5px";
-	preRollPictures[i].style.display ="inline-block";
-	scrollDiv.style.border = "1px solid #ccc";
-	scrollDiv.style.overflow = "auto";
-	scrollDiv.style.whiteSpace = "nowrap";
-	scrollDiv.appendChild(preRollPictures[i]);
-  }
+function drawPhotos(sourceArray){
+    console.log('Clearing previous elements...');
+    while(scrollDiv.firstChild){
+        scrollDiv.removeChild(scrollDiv.firstChild);
+    } 
+    console.log('Drawing current elements...');
+    for(var i = 0; i < sourceArray.length;i++){
+        sourceArray[i].style.visibility = 'visible';
+        sourceArray[i].style.width ="120px";
+        sourceArray[i].style.height ="auto";
+        sourceArray[i].style.padding ="5px";
+        sourceArray[i].style.display ="inline-block";
+        scrollDiv.style.border = "1px solid #ccc";
+        scrollDiv.style.overflow = "auto";
+        scrollDiv.style.whiteSpace = "nowrap";
+        scrollDiv.appendChild(sourceArray[i]);
+    }
+}
+
+function drawResult(){
+    console.log('Drawing current elements...');
+    for(var i = 0; i < postPickingPictures.length;i++){
+        postPickingPictures[i].style.visibility = 'visible';
+        postPickingPictures[i].style.width ="120px";
+        postPickingPictures[i].style.height ="auto";
+        postPickingPictures[i].style.padding ="5px";
+        postPickingPictures[i].style.display ="inline-block";
+        scrollDiv.style.border = "1px solid #ccc";
+        scrollDiv.style.overflow = "auto";
+        scrollDiv.style.whiteSpace = "nowrap";
+        scrollDiv.appendChild(postPickingPictures[i]);
+    }
 }
 
 function handleSourceOpen(event) {
@@ -178,7 +236,7 @@ function handleDataAvailable(event){
 
 function beginRecording(){
 	preRollPictures = [];
-  setInterval(makePreRecordedpreRollPictures, 1000);
+  setInterval(takePreRollPictures, 1000);
   trace('>>>>> on Record <<<<<');
   stopBtn.disabled = false;
   playBtn.disabled = true;
@@ -222,12 +280,18 @@ function beginRecording(){
   	console.log('Recorded Blobs: ', recordedBlobs);
     console.log('preRollPictures [] : ',preRollPictures);
     
-    drawPhotos();
+    drawPhotos(preRollPictures);
+    postPickingPictures = [];
+    setInterval(snapPickingPictures, 1000);
+    setTimeout(clearInterval, 5100);
+    setTimeout(drawResult, 6000);
   };
+
   mediaRecorder.ondataavailable = handleDataAvailable;
   mediaRecorder.start(10);
   console.log('MediaRecorder started', mediaRecorder);
 }
+
 
 function stopRecording(){
   clearInterval();
