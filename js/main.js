@@ -8,9 +8,14 @@ let sourceBuffer;
 
 let tmpPicture, tmpContext;
 let preRollPictures;
-let postPickingPictures;
+let postRollPictures;
 
-const MAX_LIMIT = 5;
+const NUM_SNAP_TIME = 5;
+const FRAME_INTERVAL_MSEC = 1000;
+const GRACE_PERIOD = 100;
+
+var tPreRoll;
+var tPostRoll;
 
 var isChannelReady = false;
 var isInitiator = false;
@@ -56,6 +61,25 @@ var sdpConstraints = {
 //////////////////////////////////////////////////
 // Event 처리
 //////////////////////////////////////////////////
+pickingBtn.addEventListener('click',()=>{
+    
+    // PreRoll 캡쳐 중지
+    clearInterval(tPreRoll);
+    drawPhotos(preRollPictures);
+
+    // PostRoll 캡쳐 시작 정해진 간격 횟수만큼 촬영후 중지,그리고 결과 그리기
+    postRollPictures = [];
+    tPostRoll = setInterval(snapPostRollPictures, FRAME_INTERVAL_MSEC);
+    var clearTimer = () =>{
+        clearInterval(tPostRoll);
+    };
+    setTimeout(clearTimer, FRAME_INTERVAL_MSEC * NUM_SNAP_TIME);
+    setTimeout(drawPostRollPictures, FRAME_INTERVAL_MSEC * (NUM_SNAP_TIME+1));
+    
+    // 다음 피킹 작업을 위한 PreRoll 캡쳐 시작
+    setInterval(snapPreRollPictures, FRAME_INTERVAL_MSEC);
+})
+
 playBtn.addEventListener('click', () => {
   console.log('Play button is clicked...');
   const superBuffer = new Blob(recordedBlobs, {type: 'video/webm'});
@@ -122,7 +146,8 @@ uploadBtn.disabled = true;
 dataChannelSend.disabled = true;
 stopBtn.disabled = true;
 playBtn.disabled = true;
-recordBtn.disabled = false;
+recordBtn.disabled = true;
+pickingBtn.disabled = true;
 
 
 /////////////////////////////////////
@@ -141,7 +166,7 @@ var takePicture = function (mode, sourceVideo, destArray){
 
   tmpContext.drawImage(sourceVideo, 0, 0, tmpPicture.width, tmpPicture.height);
 
-  if(destArray.length === MAX_LIMIT){
+  if(destArray.length === NUM_SNAP_TIME){
     destArray.shift();
   }
   destArray.push(tmpPicture);
@@ -149,38 +174,34 @@ var takePicture = function (mode, sourceVideo, destArray){
 }
 
 // 픽업 이벤트 후 5개의 스냅샷을 유지한다.
-function snapPickingPictures(){
+function snapPostRollPictures(){
 
   tmpPicture = document.createElement('canvas');
   tmpContext = tmpPicture.getContext('2d');
 
-  tmpPicture.width = tmpContext.width = localVideo.videoWidth;
-  tmpPicture.height = tmpContext.height = localVideo.videoHeight;
+  tmpPicture.width = tmpContext.width = remoteVideo.videoWidth;
+  tmpPicture.height = tmpContext.height = remoteVideo.videoHeight;
 
-  tmpContext.drawImage(localVideo, 0, 0, tmpPicture.width, tmpPicture.height);
+  tmpContext.drawImage(remoteVideo, 0, 0, tmpPicture.width, tmpPicture.height);
 
-  if(postPickingPictures.length === MAX_LIMIT) {
-    postPickingPictures.shift();
+  if(postRollPictures.length === NUM_SNAP_TIME) {
+    postRollPictures.shift();
   }
-  postPickingPictures.push(tmpPicture);
+  postRollPictures.push(tmpPicture);
 
 }
 
 // 픽업 이벤트 발생전까지 5개의 스냅샵을 유지한다.
-function takePreRollPictures() {
+function snapPreRollPictures() {
   tmpPicture = document.createElement('canvas');
   tmpContext = tmpPicture.getContext('2d');
 
-  tmpPicture.width = tmpContext.width = localVideo.videoWidth;
-  tmpPicture.height = tmpContext.width = localVideo.videoHeight;
+  tmpPicture.width = tmpContext.width = remoteVideo.videoWidth;
+  tmpPicture.height = tmpContext.width = remoteVideo.videoHeight;
 
-  // tmpPicture.width = tmpContext.width = remoteVideo.videoWidth;
-  // tmpPicture.height = tmpContext.width = remoteVideo.videoHeight;
+  tmpContext.drawImage(remoteVideo, 0, 0, tmpPicture.width, tmpPicture.height);
 
-  tmpContext.drawImage(localVideo, 0, 0, tmpPicture.width, tmpPicture.height);
-  // tmpContext.drawImage(remoteVideo, 0, 0, tmpPicture.width, tmpPicture.height);
-
-  if(preRollPictures.length === MAX_LIMIT){
+  if(preRollPictures.length === NUM_SNAP_TIME){
 	preRollPictures.shift();
   }
   preRollPictures.push(tmpPicture);
@@ -204,20 +225,23 @@ function drawPhotos(sourceArray){
         scrollDiv.style.whiteSpace = "nowrap";
         scrollDiv.appendChild(sourceArray[i]);
     }
+    var tmpCmt = document.createElement('span')
+    tmpCmt.innerHTML='Picking!';
+    scrollDiv.appendChild(tmpCmt);
 }
 
-function drawResult(){
+function drawPostRollPictures(){
     console.log('Drawing current elements...');
-    for(var i = 0; i < postPickingPictures.length;i++){
-        postPickingPictures[i].style.visibility = 'visible';
-        postPickingPictures[i].style.width ="120px";
-        postPickingPictures[i].style.height ="auto";
-        postPickingPictures[i].style.padding ="5px";
-        postPickingPictures[i].style.display ="inline-block";
+    for(var i = 0; i < postRollPictures.length;i++){
+        postRollPictures[i].style.visibility = 'visible';
+        postRollPictures[i].style.width ="120px";
+        postRollPictures[i].style.height ="auto";
+        postRollPictures[i].style.padding ="5px";
+        postRollPictures[i].style.display ="inline-block";
         scrollDiv.style.border = "1px solid #ccc";
         scrollDiv.style.overflow = "auto";
         scrollDiv.style.whiteSpace = "nowrap";
-        scrollDiv.appendChild(postPickingPictures[i]);
+        scrollDiv.appendChild(postRollPictures[i]);
     }
 }
 
@@ -228,77 +252,83 @@ function handleSourceOpen(event) {
 }
 
 function handleDataAvailable(event){
-  //console.log('handleDataAvailable', event);
+  console.log('handleDataAvailable', event);
   if(event.data && event.data.size > 0){
 	recordedBlobs.push(event.data);
   }
 }
 
 function beginRecording(){
-	preRollPictures = [];
-  setInterval(takePreRollPictures, 1000);
-  trace('>>>>> on Record <<<<<');
-  stopBtn.disabled = false;
-  playBtn.disabled = true;
+    recordBtn.disabled = true;
+    pickingBtn.disabled = false;
 
-  // stopBtn.style.visibility = 'visible';
-  recordedVideo.src = null;
-  recordedVideo.srcObject = null;
-  recordedVideo.style.visibility = 'hidden';
+    preRollPictures = [];
+    tPreRoll = setInterval(snapPreRollPictures, FRAME_INTERVAL_MSEC);
 
-  recordedBlobs = [];
+    trace('>>>>> on Record <<<<<');
+    stopBtn.disabled = false;
+    playBtn.disabled = true;
 
-  let options = {mimeType: 'video/webm;codecs=vp9'};
-  if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-  	console.error(`${options.mimeType} is not Supported`);
-  	// errorMsgElement.innerHTML = `${options.mimeType} is not Supported`;
-  	options = {mimeType: 'video/webm;codecs=vp8'};
-  	if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-  	  console.error(`${options.mimeType} is not Supported`);
-  	  // errorMsgElement.innerHTML = `${options.mimeType} is not Supported`;
-  	  options = {mimeType: 'video/webm'};
-  	  if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-  		console.error(`${options.mimeType} is not Supported`);
-  		// errorMsgElement.innerHTML = `${options.mimeType} is not Supported`;
-  		options = {mimeType: ''};
-  	  }
-  	}
-  }
+    // stopBtn.style.visibility = 'visible';
+    recordedVideo.src = null;
+    recordedVideo.srcObject = null;
+    recordedVideo.style.visibility = 'hidden';
 
-  try {
-  	// mediaRecorder = new MediaRecorder(remoteStream, options);
-  	mediaRecorder = new MediaRecorder(localStream, options);
-  } catch (e) {
-	  console.error('Exception while creating MediaRecorder:', e);
-	  // errorMsgElement.innerHTML = 'Exception while creating MediaRecorder:  ${JSON.stringify(e)}`;
-	  return;
-  }
+    recordedBlobs = [];
 
-  console.log('Created MediaRecorder', mediaRecorder, 'with options', options);
-  mediaRecorder.onstop = (event) => {
-  	console.log('Recorder stopped:', event);
-  	console.log('Recorded Blobs: ', recordedBlobs);
-    console.log('preRollPictures [] : ',preRollPictures);
-    
-    drawPhotos(preRollPictures);
-    postPickingPictures = [];
-    setInterval(snapPickingPictures, 1000);
-    setTimeout(clearInterval, 5100);
-    setTimeout(drawResult, 6000);
-  };
+    let options = {mimeType: 'video/webm;codecs=vp9'};
+    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+    	console.error(`${options.mimeType} is not Supported`);
+    	// errorMsgElement.innerHTML = `${options.mimeType} is not Supported`;
+    	options = {mimeType: 'video/webm;codecs=vp8'};
+    	if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+    	  console.error(`${options.mimeType} is not Supported`);
+    	  // errorMsgElement.innerHTML = `${options.mimeType} is not Supported`;
+    	  options = {mimeType: 'video/webm'};
+    	  if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+    		console.error(`${options.mimeType} is not Supported`);
+    		// errorMsgElement.innerHTML = `${options.mimeType} is not Supported`;
+    		options = {mimeType: ''};
+    	  }
+    	}
+    }
 
-  mediaRecorder.ondataavailable = handleDataAvailable;
-  mediaRecorder.start(10);
-  console.log('MediaRecorder started', mediaRecorder);
+    try {
+    	// mediaRecorder = new MediaRecorder(remoteVideo.captureStream(), options);
+
+        mediaRecorder = new MediaRecorder(remoteStream, options);
+    } catch (e) {
+      console.error('Exception while creating MediaRecorder:', e);
+      // errorMsgElement.innerHTML = 'Exception while creating MediaRecorder:  ${JSON.stringify(e)}`;
+      return;
+    }
+
+    console.log('Created MediaRecorder', mediaRecorder, 'with options', options);
+
+    mediaRecorder.onstop = (event) => {
+    	console.log('Recorder stopped:', event);
+    	console.log('Recorded Blobs: ', recordedBlobs);
+        
+        stopBtn.disabled = true;
+        playBtn.disabled = false;
+        pickingBtn.disabled = true;
+        recordBtn.disabled = false;
+    };
+
+    mediaRecorder.ondataavailable = handleDataAvailable;
+    mediaRecorder.start(10);
+    console.log('MediaRecorder started', mediaRecorder);
 }
 
 
 function stopRecording(){
-  clearInterval();
-  console.log('<<<< Stop recording >>>>');
-  stopBtn.disabled = true;
-  playBtn.disabled = false;
-  mediaRecorder.stop();
+    console.log('<<<< Stop recording >>>>');
+    
+    // 모든 타이머 작업 지우기
+    clearInterval(tPreRoll);
+    clearInterval(tPostRoll);
+    
+    mediaRecorder.stop();
 }
 
 function snapPhoto(){
@@ -399,7 +429,7 @@ var localVideo = document.querySelector('#localVideo');
 var remoteVideo = document.querySelector('#remoteVideo');
 
 navigator.mediaDevices.getUserMedia({
-  audio: false,
+  audio: true,
   video: true
 })
 .then(gotStream)
@@ -416,12 +446,6 @@ function gotStream(stream) {
 	maybeStart();
   }
 }
-
-var constraints = {
-  video: true
-};
-
-console.log('Getting user media with constraints', constraints);
 
 if (location.hostname !== 'localhost') {
   requestTurn(
@@ -569,7 +593,8 @@ function requestTurn(turnURL) {
 }
 
 function handleRemoteStreamAdded(event) {
-  console.log('Remote stream added.');
+    recordBtn.disabled = false;
+  console.log('Remote stream added.', event.stream);
   remoteStream = event.stream;
   remoteVideo.srcObject = remoteStream;
   // 스냅샵을 위한 비디오 전처리
