@@ -7,7 +7,19 @@ var socketIO = require('socket.io');
 
 var fileServer = new(nodeStatic.Server)();
 var app = http.createServer(function(req, res) {
-  fileServer.serve(req, res);
+  if(req.url == '/upload'){
+    console.log('you are in upload page  : ');
+    let body = [];
+      req.on('data', (chunk) => {
+      body.push(chunk);
+    }).on('end', () => {
+      body = Buffer.concat(body).toString();
+      console.log(body);
+      res.end(body);
+    });
+  } else {
+    fileServer.serve(req, res);
+  }
 }).listen(8886);
 
 var io = socketIO.listen(app);

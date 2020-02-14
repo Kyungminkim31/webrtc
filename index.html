@@ -23,17 +23,11 @@
   <h1>Eyelog Remote Monitoring Board</h1>
   <p>Web rtc web client</p>
   </div> 
-  <div id="statusContainer">
-	<span id="statusSpan">
-	  Frames around picking a product moment.
-	</span> 
-	<div id="scrollCanvas">
-	</div>
-  </div>
   <!-- menu -->
   <div id="buttonMenu">
 	<button id="playBtn">Play</button>
 	<button id="stopBtn">Stop</button>
+	<div id="loader" class="loader"></div>
 	<button id="pickingBtn">Picking</button>
 	<button id="recordBtn">Record</button>
 	<button id="snapBtn">Snap</button>
@@ -65,22 +59,29 @@
 	</div>
   </div>
   <hr>
-  <!-- text -->
-  <div class="recieveTextDiv">
-	<textarea id="dataChannelReceive" disabled></textarea>
-  </div>
-
-  <!-- sendTextArea -->
-  <div class="sendTextDivContainer">
-	<div>
-	  <input id="dataChannelSend"></input>
-	</div>
-	<div>
-	  <button id="sendBtn">Send</button>
+  <div id="statusContainer">
+  	<h2>Picking Frames</h2>
+	<div id="scrollCanvas">
 	</div>
   </div>
+  <hr>
+	<div>
+	  	<h2>Chat</h2>
+		<!-- text -->
+		<div class="recieveTextDiv">
+			<textarea id="dataChannelReceive" disabled></textarea>
+		</div>
 
-  <img id="test" src="" style="width=100%"></img>
+		<!-- sendTextArea -->
+		<div class="sendTextDivContainer">
+			<div>
+				<input id="dataChannelSend"></input>
+			</div>
+			<div>
+				<button id="sendBtn">Send</button>
+			</div>
+		</div>
+	</div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>

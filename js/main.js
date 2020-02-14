@@ -36,6 +36,7 @@ var dataChannelReceive = document.querySelector('textarea#dataChannelReceive');
 var statusContainer = document.getElementById('statusSpan');
 var pickingBtn = document.getElementById('pickingBtn');
 var scrollDiv = document.getElementById('scrollCanvas');
+var loader = document.getElementById('loader');
 
 var receiveChannel;
 var sendChannel;
@@ -62,7 +63,9 @@ var sdpConstraints = {
 // Event 처리
 //////////////////////////////////////////////////
 pickingBtn.addEventListener('click',()=>{
-    
+    loader.style.display = 'inline-block';
+    pickingBtn.style.display = 'none';
+    uploadBtn.disabled = false;
     // PreRoll 캡쳐 중지
     clearInterval(tPreRoll);
     drawPhotos(preRollPictures);
@@ -113,12 +116,47 @@ snapBtn.addEventListener('click', ()=>{
 
 // upload event handler
 var xhr;
-uploadBtn.addEventListener('click', ()=>{
-  trace('uploadSnampshot...');
+uploadBtn.addEventListener('click', uploadMultiFrames);
+
+function uploadMultiFrames(){
+  console.log('uploadMultiFrames');
+  var tmpURL, tmpInput;
+  var frames = document.getElementsByName('frames');
+  var tmpForm = document.forms["uploadForm"];
+  var fd = new FormData(document.forms["uploadForm"]);
+  
+  for(var i=0;i<frames.length;i++){
+    tmpInput = document.createElement('input');
+    tmpInput.setAttribute('name', 'images');
+    tmpInput.setAttribute('type', 'hidden');
+    tmpInput.value = frames[i].toDataURL('image/jpeg');
+    tmpForm.appendChild(tmpInput);
+  }
+
+  console.log(fd);
+
+  // do some Ajax...
+  xhr = new XMLHttpRequest();
+  xhr.onreadystatechange = viewMessage;
+  xhr.open('POST', 'http://localhost:8886/upload', true);
+
+  xhr.upload.onprogress = function(e) {
+    if(e.lengthComputable){
+      var percentComplete = (e.loaded/e.total) * 100;
+      trace(percentComplete + '% upload');
+    }
+  };
+  xhr.onload = function(){};
+  xhr.send(fd);
+
+}
+
+function uploadSnapShot(){
+  trace('uploadSnapshot...');
   var dataURL = photo.toDataURL('image/jpeg');
   document.getElementById('userid').value = '1202';
   document.getElementById('imagefile').value = dataURL;
-  
+
   var fd = new FormData(document.forms["uploadForm"]);
 
   // do some Ajax...
@@ -127,16 +165,15 @@ uploadBtn.addEventListener('click', ()=>{
   xhr.open('POST', 'http://node.visionconnect.co.kr:4000/uploadx', true);
 
   xhr.upload.onprogress = function(e) {
-	if(e.lengthComputable){
-	  var percentComplete = (e.loaded/e.total) * 100;
-	  trace(percentComplete + '% upload');
-	}
+    if(e.lengthComputable){
+      var percentComplete = (e.loaded/e.total) * 100;
+      trace(percentComplete + '% upload');
+    }
   };
-
   xhr.onload = function(){};
-
   xhr.send(fd);
-});
+}
+
 recordBtn.addEventListener('click', beginRecording);
 stopBtn.addEventListener('click', stopRecording);
 
@@ -148,6 +185,7 @@ stopBtn.disabled = true;
 playBtn.disabled = true;
 recordBtn.disabled = true;
 pickingBtn.disabled = true;
+loader.style.display = 'none';
 
 
 /////////////////////////////////////
@@ -177,6 +215,7 @@ var takePicture = function (mode, sourceVideo, destArray){
 function snapPostRollPictures(){
 
   tmpPicture = document.createElement('canvas');
+  tmpPicture.setAttribute('name', 'frames');
   tmpContext = tmpPicture.getContext('2d');
 
   tmpPicture.width = tmpContext.width = remoteVideo.videoWidth;
@@ -194,6 +233,7 @@ function snapPostRollPictures(){
 // 픽업 이벤트 발생전까지 5개의 스냅샵을 유지한다.
 function snapPreRollPictures() {
   tmpPicture = document.createElement('canvas');
+  tmpPicture.setAttribute('name', 'frames');
   tmpContext = tmpPicture.getContext('2d');
 
   tmpPicture.width = tmpContext.width = remoteVideo.videoWidth;
@@ -211,7 +251,7 @@ function snapPreRollPictures() {
 function drawPhotos(sourceArray){
     console.log('Clearing previous elements...');
     while(scrollDiv.firstChild){
-        scrollDiv.removeChild(scrollDiv.firstChild);
+         scrollDiv.removeChild(scrollDiv.firstChild);
     } 
     console.log('Drawing current elements...');
     for(var i = 0; i < sourceArray.length;i++){
@@ -225,9 +265,6 @@ function drawPhotos(sourceArray){
         scrollDiv.style.whiteSpace = "nowrap";
         scrollDiv.appendChild(sourceArray[i]);
     }
-    var tmpCmt = document.createElement('span')
-    tmpCmt.innerHTML='Picking!';
-    scrollDiv.appendChild(tmpCmt);
 }
 
 function drawPostRollPictures(){
@@ -243,6 +280,8 @@ function drawPostRollPictures(){
         scrollDiv.style.whiteSpace = "nowrap";
         scrollDiv.appendChild(postRollPictures[i]);
     }
+    loader.style.display = 'none';
+    pickingBtn.style.display = 'inline-block';
 }
 
 function handleSourceOpen(event) {

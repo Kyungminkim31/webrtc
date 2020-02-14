@@ -40,10 +40,11 @@ hr{
 }
 
 #statusContainer{
-    width: auto
-    border: 1px solid #ccc;
-    background-color: #f8f8f8;
-    magin:5px;
+    width: auto;
+    height : 150px;
+    /*border: 1px solid #ccc;*/
+    /*background-color: #f8f8f8;*/
+    /*magin:5px;*/
 }
 
 #buttonMenu {
@@ -113,6 +114,7 @@ button{
     font-size:14px;
     background-color: #555555;
     border-radius: 4px;
+    vertical-align: middle;
 }
 
 button:hover{
@@ -123,6 +125,29 @@ button:hover{
 button:disabled{
     background:#dddddd;
     color:white;
+}
+
+.loader {
+  border: 4px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 4px solid #3498db;
+  width: 12px;
+  height: 12px;
+  -webkit-animation: spin 2s linear infinite; /* Safari */
+  animation: spin 2s linear infinite;
+  display:inline-block;
+  vertical-align: middle
+}
+
+/* Safari */
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 #footer{
