@@ -35,8 +35,10 @@ var dataChannelSend = document.querySelector('input#dataChannelSend');
 var dataChannelReceive = document.querySelector('textarea#dataChannelReceive');
 var statusContainer = document.getElementById('statusSpan');
 var pickingBtn = document.getElementById('pickingBtn');
+var hangupBtn = document.getElementById('hangupBtn');
 var scrollDiv = document.getElementById('scrollCanvas');
 var loader = document.getElementById('loader');
+var connectBtn = document.getElementById('connectBtn');
 
 var receiveChannel;
 var sendChannel;
@@ -49,7 +51,7 @@ var photoContextH;
 
 var pcConfig = {
   'iceServers': [{
-	'urls': 'stun:stun.l.google.com:19302'
+  'urls': 'stun:stun.l.google.com:19302'
   }]
 };
 
@@ -63,24 +65,24 @@ var sdpConstraints = {
 // Event 처리
 //////////////////////////////////////////////////
 pickingBtn.addEventListener('click',()=>{
-    loader.style.display = 'inline-block';
-    pickingBtn.style.display = 'none';
-    uploadBtn.disabled = false;
-    // PreRoll 캡쳐 중지
-    clearInterval(tPreRoll);
-    drawPhotos(preRollPictures);
+  loader.style.display = 'inline-block';
+  pickingBtn.style.display = 'none';
+  uploadBtn.disabled = false;
+  // PreRoll 캡쳐 중지
+  clearInterval(tPreRoll);
+  drawPhotos(preRollPictures);
 
-    // PostRoll 캡쳐 시작 정해진 간격 횟수만큼 촬영후 중지,그리고 결과 그리기
-    postRollPictures = [];
-    tPostRoll = setInterval(snapPostRollPictures, FRAME_INTERVAL_MSEC);
-    var clearTimer = () =>{
-        clearInterval(tPostRoll);
-    };
-    setTimeout(clearTimer, FRAME_INTERVAL_MSEC * NUM_SNAP_TIME);
-    setTimeout(drawPostRollPictures, FRAME_INTERVAL_MSEC * (NUM_SNAP_TIME+1));
-    
-    // 다음 피킹 작업을 위한 PreRoll 캡쳐 시작
-    setInterval(snapPreRollPictures, FRAME_INTERVAL_MSEC);
+  // PostRoll 캡쳐 시작 정해진 간격 횟수만큼 촬영후 중지,그리고 결과 그리기
+  postRollPictures = [];
+  tPostRoll = setInterval(snapPostRollPictures, FRAME_INTERVAL_MSEC);
+  var clearTimer = () =>{
+    clearInterval(tPostRoll);
+  };
+  setTimeout(clearTimer, FRAME_INTERVAL_MSEC * NUM_SNAP_TIME);
+  setTimeout(drawPostRollPictures, FRAME_INTERVAL_MSEC * (NUM_SNAP_TIME+1));
+
+  // 다음 피킹 작업을 위한 PreRoll 캡쳐 시작
+  setInterval(snapPreRollPictures, FRAME_INTERVAL_MSEC);
 })
 
 playBtn.addEventListener('click', () => {
@@ -98,13 +100,13 @@ playBtn.addEventListener('click', () => {
 sendBtn.addEventListener('click', ()=>{
   var data = dataChannelSend.value;
   try{
-	sendChannel.send(data);
-	dataChannelReceive.value += data +'\n';
+    sendChannel.send(data);
+    dataChannelReceive.value += data +'\n';
   } catch(err){
-	console.log('Something is going to be wrong...' + err.name);
+    console.log('Something is going to be wrong...' + err.name);
   }
-	trace('sent data : '+data);
-	dataChannelSend.value ='';
+    trace('sent data : '+data);
+    dataChannelSend.value ='';
 });
 
 snapBtn.addEventListener('click', ()=>{
@@ -113,6 +115,8 @@ snapBtn.addEventListener('click', ()=>{
   photo.style.visibility = "visible"; 
   trace('draw image on canvas...');  
 });
+
+hangupBtn.addEventListener('click', hangup);
 
 // upload event handler
 var xhr;
@@ -123,8 +127,7 @@ function uploadMultiFrames(){
   var tmpURL, tmpInput;
   var frames = document.getElementsByName('frames');
   var tmpForm = document.forms["uploadForm"];
-  var fd = new FormData(document.forms["uploadForm"]);
-  
+
   for(var i=0;i<frames.length;i++){
     tmpInput = document.createElement('input');
     tmpInput.setAttribute('name', 'images');
@@ -133,7 +136,8 @@ function uploadMultiFrames(){
     tmpForm.appendChild(tmpInput);
   }
 
-  console.log(fd);
+  var fd = new FormData(document.forms["uploadForm"]);
+
 
   // do some Ajax...
   xhr = new XMLHttpRequest();
@@ -176,7 +180,9 @@ function uploadSnapShot(){
 
 recordBtn.addEventListener('click', beginRecording);
 stopBtn.addEventListener('click', stopRecording);
+connectBtn.addEventListener('click', onConnect);
 
+connectBtn.disabled = false;
 sendBtn.disabled = true;
 snapBtn.disabled = true;
 uploadBtn.disabled = true;
@@ -185,6 +191,7 @@ stopBtn.disabled = true;
 playBtn.disabled = true;
 recordBtn.disabled = true;
 pickingBtn.disabled = true;
+hangupBtn.disabled = true;
 loader.style.display = 'none';
 
 
@@ -242,46 +249,46 @@ function snapPreRollPictures() {
   tmpContext.drawImage(remoteVideo, 0, 0, tmpPicture.width, tmpPicture.height);
 
   if(preRollPictures.length === NUM_SNAP_TIME){
-	preRollPictures.shift();
+  preRollPictures.shift();
   }
   preRollPictures.push(tmpPicture);
 }
 
 // 지정된 사이즈 만큼의 Snapshot을 만들어 낸다.
 function drawPhotos(sourceArray){
-    console.log('Clearing previous elements...');
-    while(scrollDiv.firstChild){
-         scrollDiv.removeChild(scrollDiv.firstChild);
-    } 
-    console.log('Drawing current elements...');
-    for(var i = 0; i < sourceArray.length;i++){
-        sourceArray[i].style.visibility = 'visible';
-        sourceArray[i].style.width ="120px";
-        sourceArray[i].style.height ="auto";
-        sourceArray[i].style.padding ="5px";
-        sourceArray[i].style.display ="inline-block";
-        scrollDiv.style.border = "1px solid #ccc";
-        scrollDiv.style.overflow = "auto";
-        scrollDiv.style.whiteSpace = "nowrap";
-        scrollDiv.appendChild(sourceArray[i]);
-    }
+  console.log('Clearing previous elements...');
+  while(scrollDiv.firstChild){
+    scrollDiv.removeChild(scrollDiv.firstChild);
+  } 
+  console.log('Drawing current elements...');
+  for(var i = 0; i < sourceArray.length;i++){
+    sourceArray[i].style.visibility = 'visible';
+    sourceArray[i].style.width ="120px";
+    sourceArray[i].style.height ="auto";
+    sourceArray[i].style.padding ="5px";
+    sourceArray[i].style.display ="inline-block";
+    scrollDiv.style.border = "1px solid #ccc";
+    scrollDiv.style.overflow = "auto";
+    scrollDiv.style.whiteSpace = "nowrap";
+    scrollDiv.appendChild(sourceArray[i]);
+  }
 }
 
 function drawPostRollPictures(){
-    console.log('Drawing current elements...');
-    for(var i = 0; i < postRollPictures.length;i++){
-        postRollPictures[i].style.visibility = 'visible';
-        postRollPictures[i].style.width ="120px";
-        postRollPictures[i].style.height ="auto";
-        postRollPictures[i].style.padding ="5px";
-        postRollPictures[i].style.display ="inline-block";
-        scrollDiv.style.border = "1px solid #ccc";
-        scrollDiv.style.overflow = "auto";
-        scrollDiv.style.whiteSpace = "nowrap";
-        scrollDiv.appendChild(postRollPictures[i]);
-    }
-    loader.style.display = 'none';
-    pickingBtn.style.display = 'inline-block';
+  console.log('Drawing current elements...');
+  for(var i = 0; i < postRollPictures.length;i++){
+    postRollPictures[i].style.visibility = 'visible';
+    postRollPictures[i].style.width ="120px";
+    postRollPictures[i].style.height ="auto";
+    postRollPictures[i].style.padding ="5px";
+    postRollPictures[i].style.display ="inline-block";
+    scrollDiv.style.border = "1px solid #ccc";
+    scrollDiv.style.overflow = "auto";
+    scrollDiv.style.whiteSpace = "nowrap";
+    scrollDiv.appendChild(postRollPictures[i]);
+  }
+  loader.style.display = 'none';
+  pickingBtn.style.display = 'inline-block';
 }
 
 function handleSourceOpen(event) {
@@ -293,81 +300,80 @@ function handleSourceOpen(event) {
 function handleDataAvailable(event){
   console.log('handleDataAvailable', event);
   if(event.data && event.data.size > 0){
-	recordedBlobs.push(event.data);
+  recordedBlobs.push(event.data);
   }
 }
 
 function beginRecording(){
-    recordBtn.disabled = true;
-    pickingBtn.disabled = false;
+  recordBtn.disabled = true;
+  pickingBtn.disabled = false;
 
-    preRollPictures = [];
-    tPreRoll = setInterval(snapPreRollPictures, FRAME_INTERVAL_MSEC);
+  preRollPictures = [];
+  tPreRoll = setInterval(snapPreRollPictures, FRAME_INTERVAL_MSEC);
 
-    trace('>>>>> on Record <<<<<');
-    stopBtn.disabled = false;
-    playBtn.disabled = true;
+  trace('>>>>> on Record <<<<<');
+  stopBtn.disabled = false;
+  playBtn.disabled = true;
 
-    // stopBtn.style.visibility = 'visible';
-    recordedVideo.src = null;
-    recordedVideo.srcObject = null;
-    recordedVideo.style.visibility = 'hidden';
+  // stopBtn.style.visibility = 'visible';
+  recordedVideo.src = null;
+  recordedVideo.srcObject = null;
+  recordedVideo.style.visibility = 'hidden';
 
-    recordedBlobs = [];
+  recordedBlobs = [];
 
-    let options = {mimeType: 'video/webm;codecs=vp9'};
+  let options = {mimeType: 'video/webm;codecs=vp9'};
+  if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+    console.error(`${options.mimeType} is not Supported`);
+    // errorMsgElement.innerHTML = `${options.mimeType} is not Supported`;
+    options = {mimeType: 'video/webm;codecs=vp8'};
     if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-    	console.error(`${options.mimeType} is not Supported`);
-    	// errorMsgElement.innerHTML = `${options.mimeType} is not Supported`;
-    	options = {mimeType: 'video/webm;codecs=vp8'};
-    	if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-    	  console.error(`${options.mimeType} is not Supported`);
-    	  // errorMsgElement.innerHTML = `${options.mimeType} is not Supported`;
-    	  options = {mimeType: 'video/webm'};
-    	  if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-    		console.error(`${options.mimeType} is not Supported`);
-    		// errorMsgElement.innerHTML = `${options.mimeType} is not Supported`;
-    		options = {mimeType: ''};
-    	  }
-    	}
+      console.error(`${options.mimeType} is not Supported`);
+      // errorMsgElement.innerHTML = `${options.mimeType} is not Supported`;
+      options = {mimeType: 'video/webm'};
+      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+        console.error(`${options.mimeType} is not Supported`);
+        // errorMsgElement.innerHTML = `${options.mimeType} is not Supported`;
+        options = {mimeType: ''};
+      }
     }
+  }
 
-    try {
-    	// mediaRecorder = new MediaRecorder(remoteVideo.captureStream(), options);
+  try {
+    // mediaRecorder = new MediaRecorder(remoteVideo.captureStream(), options);
+    mediaRecorder = new MediaRecorder(remoteStream, options);
+  } catch (e) {
+    console.error('Exception while creating MediaRecorder:', e);
+    // errorMsgElement.innerHTML = 'Exception while creating MediaRecorder:  ${JSON.stringify(e)}`;
+    return;
+  }
 
-        mediaRecorder = new MediaRecorder(remoteStream, options);
-    } catch (e) {
-      console.error('Exception while creating MediaRecorder:', e);
-      // errorMsgElement.innerHTML = 'Exception while creating MediaRecorder:  ${JSON.stringify(e)}`;
-      return;
-    }
+  console.log('Created MediaRecorder', mediaRecorder, 'with options', options);
 
-    console.log('Created MediaRecorder', mediaRecorder, 'with options', options);
+  mediaRecorder.onstop = (event) => {
+    console.log('Recorder stopped:', event);
+    console.log('Recorded Blobs: ', recordedBlobs);
 
-    mediaRecorder.onstop = (event) => {
-    	console.log('Recorder stopped:', event);
-    	console.log('Recorded Blobs: ', recordedBlobs);
-        
-        stopBtn.disabled = true;
-        playBtn.disabled = false;
-        pickingBtn.disabled = true;
-        recordBtn.disabled = false;
-    };
+    stopBtn.disabled = true;
+    playBtn.disabled = false;
+    pickingBtn.disabled = true;
+    recordBtn.disabled = false;
+  };
 
-    mediaRecorder.ondataavailable = handleDataAvailable;
-    mediaRecorder.start(10);
-    console.log('MediaRecorder started', mediaRecorder);
+  mediaRecorder.ondataavailable = handleDataAvailable;
+  mediaRecorder.start(10);
+  console.log('MediaRecorder started', mediaRecorder);
 }
 
 
 function stopRecording(){
-    console.log('<<<< Stop recording >>>>');
-    
-    // 모든 타이머 작업 지우기
-    clearInterval(tPreRoll);
-    clearInterval(tPostRoll);
-    
-    mediaRecorder.stop();
+  console.log('<<<< Stop recording >>>>');
+
+  // 모든 타이머 작업 지우기
+  clearInterval(tPreRoll);
+  clearInterval(tPostRoll);
+
+  mediaRecorder.stop();
 }
 
 function snapPhoto(){
@@ -379,53 +385,91 @@ function snapPhoto(){
 
 function viewMessage(){
   if(xhr.readyState==4){
-	if(xhr.status===200){
-	  var responseObj = JSON.parse(xhr.response);
-	  if(responseObj.value === "1"){
-		photo.style.visibility = "hidden"; 
-		// 'uploading is sucess'
-		alert('Uploading is sucess.');
-	  }
-	}
+    if(xhr.status===200){
+      var responseObj = JSON.parse(xhr.response);
+      if(responseObj.value === "1"){
+        photo.style.visibility = "hidden"; 
+        // 'uploading is sucess'
+        alert('Uploading is sucess.');
+      }
+    }
   }
 }
 
 /////////////////////////////////////////////
-
 var room = 'foo';
 // Could prompt for room name:
 // room = prompt('Enter room name:');
 
-var socket = io.connect();
+var socket;
 
-if (room !== '') {
-  socket.emit('create or join', room);
-  console.log('Attempted to create or  join room', room);
+function onConnect(){
+  connectBtn.disabled = true;
+  socket = io.connect();
+  initSocketMessaging()
+  sendMessage('got user media');
+  if (isInitiator) {
+    maybeStart();
+  }
 }
 
-socket.on('created', function(room) {
-  console.log('Created room ' + room);
-  isInitiator = true;
-});
+function initSocketMessaging(){
+  if (room !== '') {
+    socket.emit('create or join', room);
+    console.log('Attempted to create or  join room', room);
 
-socket.on('full', function(room) {
-  console.log('Room ' + room + ' is full');
-});
+    socket.on('created', function(room) {
+      console.log('Created room ' + room);
+      isInitiator = true;
+    });
 
-socket.on('join', function (room){
-  console.log('Another peer made a request to join room ' + room);
-  console.log('This peer is the initiator of room ' + room + '!');
-  isChannelReady = true;
-});
+    socket.on('full', function(room) {
+      console.log('Room ' + room + ' is full');
+    });
 
-socket.on('joined', function(room) {
-  console.log('joined: ' + room);
-  isChannelReady = true;
-});
+    socket.on('join', function (room){
+      console.log('Another peer made a request to join room ' + room);
+      console.log('This peer is the initiator of room ' + room + '!');
+      isChannelReady = true;
+    });
 
-socket.on('log', function(array) {
-  console.log.apply(console, array);
-});
+    socket.on('joined', function(room) {
+      console.log('joined: ' + room);
+      isChannelReady = true;
+    });
+
+    socket.on('log', function(array) {
+      console.log.apply(console, array);
+    });
+
+    socket.on('answer', function(message){
+      console.log('Answer from Android', message);
+    });
+
+    // This client receives a message
+    socket.on('message', function(message) {
+      console.log('Client received message:', message);
+      if (message === 'got user media') {
+        maybeStart();
+      } else if (message.type === 'offer') {
+        if (!isInitiator && !isStarted) {
+          maybeStart();
+        }
+        pc.setRemoteDescription(new RTCSessionDescription(message));
+        doAnswer();
+      } else if (message.type === 'answer' && isStarted) {
+        pc.setRemoteDescription(new RTCSessionDescription(message));
+      } else if (message.type === 'candidate' && isStarted) {
+        var candidate = new RTCIceCandidate({
+        sdpMLineIndex: message.label,
+        candidate: message.candidate});
+        pc.addIceCandidate(candidate);
+      } else if (message === 'bye' && isStarted) {
+        handleRemoteHangup();
+      }
+    });
+  }
+}
 
 ////////////////////////////////////////////////
 
@@ -433,34 +477,6 @@ function sendMessage(message) {
   console.log('Client sending message: ', message);
   socket.emit('message', message);
 }
-
-socket.on('answer', function(message){
-	console.log('Answer from Android', message);
-});
-
-// This client receives a message
-socket.on('message', function(message) {
-  console.log('Client received message:', message);
-  if (message === 'got user media') {
-	maybeStart();
-  } else if (message.type === 'offer') {
-	if (!isInitiator && !isStarted) {
-	  maybeStart();
-	}
-	pc.setRemoteDescription(new RTCSessionDescription(message));
-	doAnswer();
-  } else if (message.type === 'answer' && isStarted) {
-	pc.setRemoteDescription(new RTCSessionDescription(message));
-  } else if (message.type === 'candidate' && isStarted) {
-	var candidate = new RTCIceCandidate({
-	  sdpMLineIndex: message.label,
-	  candidate: message.candidate
-	});
-	pc.addIceCandidate(candidate);
-  } else if (message === 'bye' && isStarted) {
-	handleRemoteHangup();
-  }
-});
 
 ////////////////////////////////////////////////////
 
@@ -470,43 +486,38 @@ var remoteVideo = document.querySelector('#remoteVideo');
 navigator.mediaDevices.getUserMedia({
   audio: true,
   video: true
-})
-.then(gotStream)
-.catch(function(e) {
-  alert('getUserMedia() error: ' + e.name);
-});
+}).then(gotStream,
+(e)=>{alert('error on connect : '+e.message)});
 
 function gotStream(stream) {
   console.log('Adding local stream.');
   localStream = stream;
   localVideo.srcObject = stream;
-  sendMessage('got user media');
-  if (isInitiator) {
-	maybeStart();
-  }
 }
 
+// 로컬호스트가 아닐경우 별도의 Turn서버를 호출한다.
 if (location.hostname !== 'localhost') {
   requestTurn(
-	'https://computeengineondemand.appspot.com/turn?username=41784574&key=4080218913'
+    'https://computeengineondemand.appspot.com/turn?username=41784574&key=4080218913'
   );
 }
 
 function maybeStart() {
   console.log('>>>>>>> maybeStart() ', isStarted, localStream, isChannelReady);
   if (!isStarted && typeof localStream !== 'undefined' && isChannelReady) {
-	console.log('>>>>>> creating peer connection');
-	createPeerConnection();
-	pc.addStream(localStream);
-	isStarted = true;
-	sendBtn.disabled = false;
-	snapBtn.disabled = false;
-	recordBtn.disabled = false;
-	dataChannelSend.disabled = false;
-	console.log('isInitiator', isInitiator);
-	if (isInitiator) {
-	  doCall();
-	}
+    console.log('>>>>>> creating peer connection');
+    createPeerConnection();
+    pc.addStream(localStream);
+    isStarted = true;
+    sendBtn.disabled = false;
+    snapBtn.disabled = false;
+    recordBtn.disabled = false;
+    hangupBtn.disabled = false;
+    dataChannelSend.disabled = false;
+    console.log('isInitiator', isInitiator);
+    if (isInitiator) {
+      doCall();
+    }
   }
 }
 
@@ -518,60 +529,60 @@ window.onbeforeunload = function() {
 //      Initialization and Event about DataChannel     //
 /////////////////////////////////////////////////////////
 function initDataChannel(){
-	// 클라이언트로부터 전송해오는 DataChannel 콜백함수를 지정한다.
-	sendChannel = pc.createDataChannel('sendDataChannel', null);
-	console.log('Created send data channel');
-	
-	//전송을 위한 DataChannel의 콜백 지정
-	sendChannel.onopen = onSendChannelStateChange;
-	sendChannel.onclose = onSendChannelStateChange;
-	console.log('set callback function for sendChannel');
+  // 클라이언트로부터 전송해오는 DataChannel 콜백함수를 지정한다.
+  sendChannel = pc.createDataChannel('sendDataChannel', null);
+  console.log('Created send data channel');
+  
+  //전송을 위한 DataChannel의 콜백 지정
+  sendChannel.onopen = onSendChannelStateChange;
+  sendChannel.onclose = onSendChannelStateChange;
+  console.log('set callback function for sendChannel');
 
-	// 수신을 위한 DataChannel의 콜백 지정
-	pc.ondatachannel = receiveChannelCallback;
-	console.log('set callback function for receiveChannelCallback');
+  // 수신을 위한 DataChannel의 콜백 지정
+  pc.ondatachannel = receiveChannelCallback;
+  console.log('set callback function for receiveChannelCallback');
 }
 
 
 function createPeerConnection() {
   try {
-	pc = new RTCPeerConnection(null);
-	pc.onicecandidate = handleIceCandidate;
-	pc.onaddstream = handleRemoteStreamAdded;
-	pc.onremovestream = handleRemoteStreamRemoved;
+    pc = new RTCPeerConnection(null);
+    pc.onicecandidate = handleIceCandidate;
+    pc.onaddstream = handleRemoteStreamAdded;
+    pc.onremovestream = handleRemoteStreamRemoved;
 
-	initDataChannel();
-	
-	console.log('Created RTCPeerConnnection');
+    initDataChannel();
+    
+    console.log('Created RTCPeerConnnection');
 
   } catch (e) {
-	console.log('Failed to create PeerConnection, exception: ' + e.message);
-	alert('Cannot create RTCPeerConnection object.');
-	return;
+    console.log('Failed to create PeerConnection, exception: ' + e.message);
+    alert('Cannot create RTCPeerConnection object.');
+    return;
   }
 }
 
 function onSendChannelStateChange() {
   var readyState = sendChannel.readyState;
-  trace('Send channel state is: ' + readyState);
+    trace('Send channel state is: ' + readyState);
   if (readyState === 'open') {
-	console.log('readyState is open');
+    console.log('readyState is open');
   } else {
-	console.log('readyState is close');
+    console.log('readyState is close');
   }
 }
 
 function handleIceCandidate(event) {
   console.log('icecandidate event: ', event);
   if (event.candidate) {
-	sendMessage({
-	  type: 'candidate',
-	  label: event.candidate.sdpMLineIndex,
-	  id: event.candidate.sdpMid,
-	  candidate: event.candidate.candidate
-	});
+    sendMessage({
+      type: 'candidate',
+      label: event.candidate.sdpMLineIndex,
+      id: event.candidate.sdpMid,
+      candidate: event.candidate.candidate
+    });
   } else {
-	console.log('End of candidates.');
+    console.log('End of candidates.');
   }
 }
 
@@ -587,8 +598,8 @@ function doCall() {
 function doAnswer() {
   console.log('Sending answer to peer.');
   pc.createAnswer().then(
-	setLocalAndSendMessage,
-	onCreateSessionDescriptionError
+    setLocalAndSendMessage,
+    onCreateSessionDescriptionError
   );
 }
 
@@ -605,42 +616,42 @@ function onCreateSessionDescriptionError(error) {
 function requestTurn(turnURL) {
   var turnExists = false;
   for (var i in pcConfig.iceServers) {
-	if (pcConfig.iceServers[i].urls.substr(0, 5) === 'turn:') {
-	  turnExists = true;
-	  turnReady = true;
-	  break;
-	}
+    if (pcConfig.iceServers[i].urls.substr(0, 5) === 'turn:') {
+      turnExists = true;
+      turnReady = true;
+      break;
+    }
   }
   if (!turnExists) {
-	console.log('Getting TURN server from ', turnURL);
-	// No TURN server. Get one from computeengineondemand.appspot.com:
-	var xhr = new XMLHttpRequest();
-	xhr.onreadystatechange = function() {
-	  if (xhr.readyState === 4 && xhr.status === 200) {
-		var turnServer = JSON.parse(xhr.responseText);
-		console.log('Got TURN server: ', turnServer);
-		pcConfig.iceServers.push({
-		  'urls': 'turn:' + turnServer.username + '@' + turnServer.turn,
-		  'credential': turnServer.password
-		});
-		turnReady = true;
-	  }
-	};
-	xhr.open('GET', turnURL, true);
-	xhr.send();
+    console.log('Getting TURN server from ', turnURL);
+    // No TURN server. Get one from computeengineondemand.appspot.com:
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState === 4 && xhr.status === 200) {
+        var turnServer = JSON.parse(xhr.responseText);
+        console.log('Got TURN server: ', turnServer);
+        pcConfig.iceServers.push({
+          'urls': 'turn:' + turnServer.username + '@' + turnServer.turn,
+          'credential': turnServer.password
+        });
+        turnReady = true;
+      }
+    };
+    xhr.open('GET', turnURL, true);
+    xhr.send();
   }
 }
 
 function handleRemoteStreamAdded(event) {
-    recordBtn.disabled = false;
+  recordBtn.disabled = false;
   console.log('Remote stream added.', event.stream);
   remoteStream = event.stream;
   remoteVideo.srcObject = remoteStream;
   // 스냅샵을 위한 비디오 전처리
   remoteVideo.onloadedmetadata = function(){
-	photo.width = photoContextW = remoteVideo.videoWidth;
-	photo.height = photoContextH = remoteVideo.videoHeight;
-	trace('got remoteStream with width and height : ', photoContextW, photoContextH);
+    photo.width = photoContextW = remoteVideo.videoWidth;
+    photo.height = photoContextH = remoteVideo.videoHeight;
+    trace('got remoteStream with width and height : ', photoContextW, photoContextH);
   }
 }
 
@@ -650,8 +661,8 @@ function handleRemoteStreamRemoved(event) {
 
 function hangup() {
   console.log('Hanging up.');
-  stop();
   sendMessage('bye');
+  stop();
 }
 
 function handleRemoteHangup() {
@@ -661,9 +672,25 @@ function handleRemoteHangup() {
 }
 
 function stop() {
+  isChannelReady = false;
   isStarted = false;
   pc.close();
   pc = null;
+  
+  socket.emit('leave', room);
+
+  connectBtn.disabled = false;
+  sendBtn.disabled = true;
+  snapBtn.disabled = true;
+  uploadBtn.disabled = true;
+  dataChannelSend.disabled = true;
+  stopBtn.disabled = true;
+  playBtn.disabled = true;
+  recordBtn.disabled = true;
+  pickingBtn.disabled = true;
+  hangupBtn.disabled = true;
+  loader.style.display = 'none';
+  socket.disconnect(true);
 }
 
 function receiveChannelCallback(event) {
@@ -689,22 +716,22 @@ function onReceiveChannelStateChange() {
 ///////////////////////////////////////////////////////
 function trace(text) {
   if (text[text.length - 1] === '\n') {
-	text = text.substring(0, text.length - 1);
+    text = text.substring(0, text.length - 1);
   }
   if (window.performance) {
-	var now = (window.performance.now() / 1000).toFixed(3);
-	var d = new Date()
-			, yy = d.getFullYear()
-			, mm = leadingZeros(d.getMonth(),2)
-			, dd = leadingZeros(d.getDate(),2)
-			, h = d.getHours()
-			, m = d.getMinutes()
-			, s = leadingZeros(d.getSeconds(),2)
-			, ms = leadingZeros(d.getMilliseconds(),3);
-	var time = yy+'-'+mm+'-'+dd+' '+'['+h + ':' + m +':' + s + '.' + ms +']';
-	console.log(time + ' - ' + text);
+    var now = (window.performance.now() / 1000).toFixed(3);
+    var d = new Date()
+        , yy = d.getFullYear()
+        , mm = leadingZeros(d.getMonth(),2)
+        , dd = leadingZeros(d.getDate(),2)
+        , h = d.getHours()
+        , m = d.getMinutes()
+        , s = leadingZeros(d.getSeconds(),2)
+        , ms = leadingZeros(d.getMilliseconds(),3);
+    var time = yy+'-'+mm+'-'+dd+' '+'['+h + ':' + m +':' + s + '.' + ms +']';
+    console.log(time + ' - ' + text);
   } else {
-	console.log(text);
+    console.log(text);
   }
 }
 
@@ -713,8 +740,9 @@ function leadingZeros(n, digits) {
   n = n.toString();
 
   if (n.length < digits) {
-	for (var i = 0; i < digits - n.length; i++)
-	  zero += '0';
+    for (var i = 0; i < digits - n.length; i++){
+      zero += '0';
+    }
   }
   return zero + n;
 }

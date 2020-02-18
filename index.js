@@ -35,8 +35,25 @@ io.sockets.on('connection', function(socket) {
 
   socket.on('message', function(message) {
     console.log(socket.id, 'Client said: ', message);
-    // for a real app, would be room-only (not broadcast)
     socket.broadcast.emit('message', message);
+  });
+
+  socket.on('leave', function(room){
+    console.log('in bye message...');
+    var clientsInRoom = io.sockets.adapter.rooms[room];
+    var numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0;
+
+    console.log('Room ' + room + ' now has ' + numClients + ' clients(s)');
+
+    if(numClients >= 0){
+      socket.leave(room);
+      console.log('Client Id ' + socket.id + ' leave room ' + room);
+      numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0;
+      console.log('Room ' + room + ' now has ' + numClients + ' clients(s)');
+    } else {
+      console.error('No one is in room ' + room);
+    }
+
   });
 
   socket.on('create or join', function(room) {
