@@ -39,15 +39,13 @@ io.sockets.on('connection', function(socket) {
   });
 
   socket.on('leave', function(room){
-    console.log('in bye message...');
+    console.log('socket id ' + socket.id + ' emits \'leave\'.');
     var clientsInRoom = io.sockets.adapter.rooms[room];
     var numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0;
 
-    console.log('Room ' + room + ' now has ' + numClients + ' clients(s)');
-
     if(numClients >= 0){
       socket.leave(room);
-      console.log('Client Id ' + socket.id + ' leave room ' + room);
+      console.log('Client Id ' + socket.id + ' just left room ' + room);
       numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0;
       console.log('Room ' + room + ' now has ' + numClients + ' clients(s)');
     } else {
