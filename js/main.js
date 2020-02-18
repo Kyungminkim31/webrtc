@@ -672,7 +672,6 @@ function handleRemoteHangup() {
 }
 
 function stop() {
-  isChannelReady = false;
   isStarted = false;
   pc.close();
   pc = null;
