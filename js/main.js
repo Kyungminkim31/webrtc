@@ -403,10 +403,11 @@ var room = 'foo';
 
 var socket;
 
+// a Event handler function, when a connect buton clicked...
 function onConnect(){
   connectBtn.disabled = true;
   socket = io.connect();
-  initSocketMessaging()
+  initSocketMessaging();
   sendMessage('got user media');
   if (isInitiator) {
     maybeStart();
@@ -419,7 +420,7 @@ function initSocketMessaging(){
     console.log('Attempted to create or  join room', room);
 
     socket.on('created', function(room) {
-      console.log('Created room ' + room);
+      console.log('a signaling server just created room ' + room);
       isInitiator = true;
     });
 
@@ -448,7 +449,7 @@ function initSocketMessaging(){
 
     // This client receives a message
     socket.on('message', function(message) {
-      console.log('Client received message:', message);
+      console.log('Web client received message:', message);
       if (message === 'got user media') {
         maybeStart();
       } else if (message.type === 'offer') {
@@ -474,7 +475,7 @@ function initSocketMessaging(){
 ////////////////////////////////////////////////
 
 function sendMessage(message) {
-  console.log('Client sending message: ', message);
+  console.log('Web client sending message: ', message);
   socket.emit('message', message);
 }
 
@@ -668,10 +669,10 @@ function hangup() {
 function handleRemoteHangup() {
   console.log('Session terminated.');
   stop();
-  isInitiator = false;
 }
 
 function stop() {
+  isInitiator = false;
   isStarted = false;
   pc.close();
   pc = null;
