@@ -298,7 +298,7 @@ function handleSourceOpen(event) {
 }
 
 function handleDataAvailable(event){
-  console.log('handleDataAvailable', event);
+  console.log('functioning in handleDataAvailable() : ', event);
   if(event.data && event.data.size > 0){
   recordedBlobs.push(event.data);
   }
