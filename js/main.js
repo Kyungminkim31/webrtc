@@ -28,6 +28,7 @@ var turnReady;
 var recordedVideo = document.getElementById('recordedVideo');
 var recordBtn = document.getElementById('recordBtn');
 var sendBtn = document.getElementById('sendBtn');
+var downloadBtn = document.getElementById('download');
 var playBtn = document.getElementById('playBtn');
 var snapBtn = document.getElementById('snapBtn');
 var uploadBtn = document.getElementById('uploadBtn');
@@ -64,6 +65,17 @@ var sdpConstraints = {
 //////////////////////////////////////////////////
 // Event 처리
 //////////////////////////////////////////////////
+download.addEventListener('click', ()=>{
+  var blob = new Blob(recordedBlobs, {type: 'video/webm'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.style = 'display: none';
+  a.href = url;
+  a.download = 'test.webm';
+  a.click();
+  window.URL.revokeObjectURL(url);
+});
+
 pickingBtn.addEventListener('click',()=>{
   loader.style.display = 'inline-block';
   pickingBtn.style.display = 'none';
@@ -128,9 +140,10 @@ function uploadMultiFrames(){
   var frames = document.getElementsByName('frames');
   var tmpForm = document.forms["uploadForm"];
 
+  document.getElementById('userid').value = '1202';
   for(var i=0;i<frames.length;i++){
     tmpInput = document.createElement('input');
-    tmpInput.setAttribute('name', 'images');
+    tmpInput.setAttribute('name', 'imagefile');
     tmpInput.setAttribute('type', 'hidden');
     tmpInput.value = frames[i].toDataURL('image/jpeg');
     tmpForm.appendChild(tmpInput);
@@ -142,7 +155,7 @@ function uploadMultiFrames(){
   // do some Ajax...
   xhr = new XMLHttpRequest();
   xhr.onreadystatechange = viewMessage;
-  xhr.open('POST', 'http://localhost:8886/upload', true);
+  xhr.open('POST', 'http://node.visionconnect.co.kr:4000/uploadsx', true);
 
   xhr.upload.onprogress = function(e) {
     if(e.lengthComputable){
