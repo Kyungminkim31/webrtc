@@ -41,6 +41,8 @@ var scrollDiv = document.getElementById('scrollCanvas');
 var loader = document.getElementById('loader');
 var connectBtn = document.getElementById('connectBtn');
 
+var uploadVideoBtn = document.getElementById('uploadVideoBtn');
+
 var receiveChannel;
 var sendChannel;
 
@@ -65,6 +67,65 @@ var sdpConstraints = {
 //////////////////////////////////////////////////
 // Event 처리
 //////////////////////////////////////////////////
+var videoEndTimeStamp;
+// uploadVideoBtn.addEventListener('click',()=>{
+//   var userId = document.getElementById('userId').value = '1202'; 
+//   var videoId = getVideoId();
+//   var timestamp = videoEndTimeStamp;
+//   var uploadBlobs = new Blob(recordedBlobs, {type: 'video/webm'});
+
+//   xhr = new XMLHttpRequest();
+//   xhr.onreadystatechange = viewMessage;
+//   // xhr.open('POST', 'http://node.visionconnect.co.kr:4000/uploadsx', true);
+//   xhr.open('POST', 'http://localhost:3000/upload', true);
+//   xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+  
+//   var jsonObj = JSON.stringify({
+//     "userId":userId,
+//     "videoId":videoId,
+//     "timeStamp":timestamp,
+//     "uploadBlobs":uploadBlobs
+//   });
+
+//   // callback function for progress...
+//   xhr.upload.onprogress = function(e) {
+//     if(e.lengthComputable){
+//       var percentComplete = (e.loaded/e.total) * 100;
+//       trace(percentComplete + '% upload');
+//     }
+//   };
+
+//   xhr.onload = function(){};
+//   xhr.send(jsonObj);
+
+// });
+
+uploadVideoBtn.addEventListener('click', ()=>{
+  if(recordedBlobs == undefined){
+    alert('You have not recorded anything...');
+    return;
+  }
+
+  // var userId = document.getElementById('userId').value;
+  var userId = '1204';
+  var fileName = 'video_'
+                  + userId
+                  + '_'
+                  + getCurrentTime()
+                  + '.webm';
+  var myBlob = new Blob(recordedBlobs, {type: 'video/webm'});
+  console.log(myBlob);
+  var fd = new FormData();
+  fd.append('userId', '1204');
+  fd.append('upl', myBlob, fileName);
+
+  fetch('http://localhost:3000/upload',
+    {
+      method: 'post',
+      body: fd
+    });
+});
+
 download.addEventListener('click', ()=>{
   var blob = new Blob(recordedBlobs, {type: 'video/webm'});
   var url = URL.createObjectURL(blob);
@@ -98,7 +159,7 @@ pickingBtn.addEventListener('click',()=>{
 })
 
 playBtn.addEventListener('click', () => {
-  console.log('Play button is clicked...');
+	console.log('Play button is clicked...');
   const superBuffer = new Blob(recordedBlobs, {type: 'video/webm'});
   recordedVideo.src = null;
   recordedVideo.srcObject = null;
@@ -140,7 +201,7 @@ function uploadMultiFrames(){
   var frames = document.getElementsByName('frames');
   var tmpForm = document.forms["uploadForm"];
 
-  document.getElementById('userid').value = '1202';
+  document.getElementById('userId').value = '1202';
   for(var i=0;i<frames.length;i++){
     tmpInput = document.createElement('input');
     tmpInput.setAttribute('name', 'imagefile');
@@ -171,7 +232,7 @@ function uploadMultiFrames(){
 function uploadSnapShot(){
   trace('uploadSnapshot...');
   var dataURL = photo.toDataURL('image/jpeg');
-  document.getElementById('userid').value = '1202';
+  document.getElementById('userId').value = '1202';
   document.getElementById('imagefile').value = dataURL;
 
   var fd = new FormData(document.forms["uploadForm"]);
@@ -313,7 +374,7 @@ function handleSourceOpen(event) {
 function handleDataAvailable(event){
   console.log('functioning in handleDataAvailable() : ', event);
   if(event.data && event.data.size > 0){
-  recordedBlobs.push(event.data);
+		recordedBlobs.push(event.data);
   }
 }
 
@@ -366,6 +427,8 @@ function beginRecording(){
   mediaRecorder.onstop = (event) => {
     console.log('Recorder stopped:', event);
     console.log('Recorded Blobs: ', recordedBlobs);
+    
+    videoEndTimeStamp = event.timeStamp;
 
     stopBtn.disabled = true;
     playBtn.disabled = false;
@@ -735,12 +798,12 @@ function trace(text) {
     var now = (window.performance.now() / 1000).toFixed(3);
     var d = new Date()
         , yy = d.getFullYear()
-        , mm = leadingZeros(d.getMonth(),2)
-        , dd = leadingZeros(d.getDate(),2)
-        , h = d.getHours()
-        , m = d.getMinutes()
-        , s = leadingZeros(d.getSeconds(),2)
-        , ms = leadingZeros(d.getMilliseconds(),3);
+        , mm = d.getMonth().toString().padStart(2,'0')
+        , dd = d.getDate().toString().padStart(2,'0')
+        , h = d.getHours().toString().padStart(2,'0')
+        , m = d.getMinutes().toString().padStart(2,'0')
+        , s = d.getSeconds().toString().padStart(2,'0')
+        , ms = d.getMilliseconds().toString().padStart(3,'0');
     var time = yy+'-'+mm+'-'+dd+' '+'['+h + ':' + m +':' + s + '.' + ms +']';
     console.log(time + ' - ' + text);
   } else {
@@ -748,14 +811,20 @@ function trace(text) {
   }
 }
 
-function leadingZeros(n, digits) {
-  var zero = '';
-  n = n.toString();
-
-  if (n.length < digits) {
-    for (var i = 0; i < digits - n.length; i++){
-      zero += '0';
-    }
+// a function is returning current time in yymmdd_hhmmssms
+function getCurrentTime(){
+  if (window.performance) {
+    var now = (window.performance.now() / 1000).toFixed(3);
+    var d = new Date()
+        , yy = d.getFullYear()
+        , mm = d.getMonth().toString().padStart(2,'0')
+        , dd = d.getDate().toString().padStart(2,'0')
+        , h = d.getHours().toString().padStart(2,'0')
+        , m = d.getMinutes().toString().padStart(2,'0')
+        , s = d.getSeconds().toString().padStart(2,'0')
+        , ms = d.getMilliseconds().toString().padStart(3,'0');
+    return yy+mm+dd+'_'+h + m + s + ms;
+  } else {
+    alert('this browser is not supporting \"window.performance\"');
   }
-  return zero + n;
 }
