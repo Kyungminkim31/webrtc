@@ -100,31 +100,34 @@ var videoEndTimeStamp;
 
 // });
 
-uploadVideoBtn.addEventListener('click', ()=>{
-  if(recordedBlobs == undefined){
-    alert('You have not recorded anything...');
-    return;
+uploadVideoBtn.addEventListener('click', uploadVideo);
+
+//recordedBlobs을 upload 한다.
+function uploadVideo(blob ,ts){
+  if(blob && blob.size > 0){
+    // var userId = document.getElementById('userId').value;
+    var userId = '1204';
+    var fileName = 'video_'
+                    + userId
+                    + '_'
+                    + getCurrentTime()
+                    + '.webm';
+    // var myBlob = new Blob(blobs, {type: 'video/webm'});
+    console.log("uploaded blob, ts is : "+ blob +"\n"+ts);
+    var fd = new FormData();
+    fd.append('userId', '1204');
+    fd.append('timeStamp', ts);
+    fd.append('upl', blob, fileName);
+
+    fetch('http://localhost:3000/upload',
+      {
+        method: 'post',
+        body: fd
+      });
+  } else {
+    console.log('You have not recorded anything...');
   }
-
-  // var userId = document.getElementById('userId').value;
-  var userId = '1204';
-  var fileName = 'video_'
-                  + userId
-                  + '_'
-                  + getCurrentTime()
-                  + '.webm';
-  var myBlob = new Blob(recordedBlobs, {type: 'video/webm'});
-  console.log(myBlob);
-  var fd = new FormData();
-  fd.append('userId', '1204');
-  fd.append('upl', myBlob, fileName);
-
-  fetch('http://localhost:3000/upload',
-    {
-      method: 'post',
-      body: fd
-    });
-});
+}
 
 download.addEventListener('click', ()=>{
   var blob = new Blob(recordedBlobs, {type: 'video/webm'});
@@ -374,28 +377,13 @@ function handleSourceOpen(event) {
 function handleDataAvailable(event){
   console.log('functioning in handleDataAvailable() : ', event);
   if(event.data && event.data.size > 0){
-		recordedBlobs.push(event.data);
+		recordedBlobs.push(event.data); // Maybe unneccesory array...
+    uploadVideo(event.data ,event.timeStamp); // event의 blob 데이터와 timestamp를 보낸다.
   }
 }
 
-function beginRecording(){
-  recordBtn.disabled = true;
-  pickingBtn.disabled = false;
-
-  preRollPictures = [];
-  tPreRoll = setInterval(snapPreRollPictures, FRAME_INTERVAL_MSEC);
-
-  trace('>>>>> on Record <<<<<');
-  stopBtn.disabled = false;
-  playBtn.disabled = true;
-
-  // stopBtn.style.visibility = 'visible';
-  recordedVideo.src = null;
-  recordedVideo.srcObject = null;
-  recordedVideo.style.visibility = 'hidden';
-
+function initMediaRecorder(){
   recordedBlobs = [];
-
   let options = {mimeType: 'video/webm;codecs=vp9'};
   if (!MediaRecorder.isTypeSupported(options.mimeType)) {
     console.error(`${options.mimeType} is not Supported`);
@@ -427,14 +415,35 @@ function beginRecording(){
   mediaRecorder.onstop = (event) => {
     console.log('Recorder stopped:', event);
     console.log('Recorded Blobs: ', recordedBlobs);
-    
-    videoEndTimeStamp = event.timeStamp;
-
+    if(event.data && event.data.size > 0){
+      uploadVideo(event.data, event.timeStamp);
+    }
     stopBtn.disabled = true;
     playBtn.disabled = false;
     pickingBtn.disabled = true;
     recordBtn.disabled = false;
   };
+
+  console.log('Initiation of mediaRecorder is done.');
+}
+
+function beginRecording(){
+  recordBtn.disabled = true;
+  pickingBtn.disabled = false;
+
+  preRollPictures = [];
+  tPreRoll = setInterval(snapPreRollPictures, FRAME_INTERVAL_MSEC);
+
+  trace('>>>>> on Record <<<<<');
+  stopBtn.disabled = false;
+  playBtn.disabled = true;
+
+  // stopBtn.style.visibility = 'visible';
+  recordedVideo.src = null;
+  recordedVideo.srcObject = null;
+  recordedVideo.style.visibility = 'hidden';
+
+  initMediaRecorder();
 
   mediaRecorder.ondataavailable = handleDataAvailable;
   mediaRecorder.start(10);
