@@ -16,6 +16,7 @@ const GRACE_PERIOD = 100;
 
 var tPreRoll;
 var tPostRoll;
+var tVideoUploading;
 
 var isChannelReady = false;
 var isInitiator = false;
@@ -67,44 +68,11 @@ var sdpConstraints = {
 //////////////////////////////////////////////////
 // Event 처리
 //////////////////////////////////////////////////
-var videoEndTimeStamp;
-// uploadVideoBtn.addEventListener('click',()=>{
-//   var userId = document.getElementById('userId').value = '1202'; 
-//   var videoId = getVideoId();
-//   var timestamp = videoEndTimeStamp;
-//   var uploadBlobs = new Blob(recordedBlobs, {type: 'video/webm'});
-
-//   xhr = new XMLHttpRequest();
-//   xhr.onreadystatechange = viewMessage;
-//   // xhr.open('POST', 'http://node.visionconnect.co.kr:4000/uploadsx', true);
-//   xhr.open('POST', 'http://localhost:3000/upload', true);
-//   xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-  
-//   var jsonObj = JSON.stringify({
-//     "userId":userId,
-//     "videoId":videoId,
-//     "timeStamp":timestamp,
-//     "uploadBlobs":uploadBlobs
-//   });
-
-//   // callback function for progress...
-//   xhr.upload.onprogress = function(e) {
-//     if(e.lengthComputable){
-//       var percentComplete = (e.loaded/e.total) * 100;
-//       trace(percentComplete + '% upload');
-//     }
-//   };
-
-//   xhr.onload = function(){};
-//   xhr.send(jsonObj);
-
-// });
-
 uploadVideoBtn.addEventListener('click', uploadVideo);
 
 //recordedBlobs을 upload 한다.
-function uploadVideo(blob ,ts){
-  if(blob && blob.size > 0){
+function uploadVideo(blobs ,ts){
+  if(blobs.length > 0){
     // var userId = document.getElementById('userId').value;
     var userId = '1204';
     var fileName = 'video_'
@@ -112,12 +80,10 @@ function uploadVideo(blob ,ts){
                     + '_'
                     + getCurrentTime()
                     + '.webm';
-    // var myBlob = new Blob(blobs, {type: 'video/webm'});
-    console.log("uploaded blob, ts is : "+ blob +"\n"+ts);
     var fd = new FormData();
     fd.append('userId', '1204');
     fd.append('timeStamp', ts);
-    fd.append('upl', blob, fileName);
+    fd.append('upl', new Blob(blobs, {type: 'video/webm'}), fileName);
 
     fetch('http://localhost:3000/upload',
       {
@@ -378,7 +344,6 @@ function handleDataAvailable(event){
   console.log('functioning in handleDataAvailable() : ', event);
   if(event.data && event.data.size > 0){
 		recordedBlobs.push(event.data); // Maybe unneccesory array...
-    uploadVideo(event.data ,event.timeStamp); // event의 blob 데이터와 timestamp를 보낸다.
   }
 }
 
@@ -412,18 +377,15 @@ function initMediaRecorder(){
 
   console.log('Created MediaRecorder', mediaRecorder, 'with options', options);
 
+  // callback function for a event of MediaRecorder.stop() 
   mediaRecorder.onstop = (event) => {
-    console.log('Recorder stopped:', event);
-    console.log('Recorded Blobs: ', recordedBlobs);
-    if(event.data && event.data.size > 0){
-      uploadVideo(event.data, event.timeStamp);
+    console.log('onStop()...');
+    if(recordedBlobs.length > 0){
+      console.log('uploading()...');
+      uploadVideo(recordedBlobs, event.timeStamp);
+      recordedBlobs = [];
     }
-    stopBtn.disabled = true;
-    playBtn.disabled = false;
-    pickingBtn.disabled = true;
-    recordBtn.disabled = false;
   };
-
   console.log('Initiation of mediaRecorder is done.');
 }
 
@@ -434,7 +396,6 @@ function beginRecording(){
   preRollPictures = [];
   tPreRoll = setInterval(snapPreRollPictures, FRAME_INTERVAL_MSEC);
 
-  trace('>>>>> on Record <<<<<');
   stopBtn.disabled = false;
   playBtn.disabled = true;
 
@@ -442,23 +403,34 @@ function beginRecording(){
   recordedVideo.src = null;
   recordedVideo.srcObject = null;
   recordedVideo.style.visibility = 'hidden';
-
-  initMediaRecorder();
-
+  initMediaRecorder(); 
   mediaRecorder.ondataavailable = handleDataAvailable;
   mediaRecorder.start(10);
+  trace('>>>>> on Record <<<<<');
   console.log('MediaRecorder started', mediaRecorder);
+  // 5 초(정해진 주기)마다 촬영을 멈추고 파일 업로드를 수행하게 한다.
+  tVideoUploading = setInterval(loopVideoUploading, 1000 *5 );
 }
 
+// a function for setInterval()...
+function loopVideoUploading(){
+    mediaRecorder.stop();
+    mediaRecorder.start(10);
+}
 
 function stopRecording(){
-  console.log('<<<< Stop recording >>>>');
-
   // 모든 타이머 작업 지우기
   clearInterval(tPreRoll);
   clearInterval(tPostRoll);
+  clearInterval(tVideoUploading);
 
   mediaRecorder.stop();
+  console.log('<<<< Stop recording >>>>');
+
+  stopBtn.disabled = true;
+  playBtn.disabled = false;
+  pickingBtn.disabled = true;
+  recordBtn.disabled = false;
 }
 
 function snapPhoto(){
