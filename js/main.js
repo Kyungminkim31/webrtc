@@ -568,7 +568,7 @@ function maybeStart() {
     console.log('>>>>>> creating peer connection');
     createPeerConnection();
     localStream.getTracks().forEach((track)=>{
-      pc.addTrack(track, localStream)
+      pc.addTrack(track, localStream);
     });
     isStarted = true;
     sendBtn.disabled = false;
