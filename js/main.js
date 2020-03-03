@@ -608,7 +608,7 @@ function createPeerConnection() {
   try {
     pc = new RTCPeerConnection(null);
     pc.onicecandidate = handleIceCandidate;
-    pc.onaddstream = handleRemoteStreamAdded;
+    pc.ontrack = handleRemoteStreamAdded;
     pc.onremovestream = handleRemoteStreamRemoved;
 
     initDataChannel();
@@ -707,9 +707,9 @@ function requestTurn(turnURL) {
 
 function handleRemoteStreamAdded(event) {
   recordBtn.disabled = false;
-  console.log('Remote stream added.', event.stream);
-  remoteStream = event.stream;
+  remoteStream = event.streams[0];
   remoteVideo.srcObject = remoteStream;
+  console.log('Remote stream added.', remoteStream);
   // 스냅샵을 위한 비디오 전처리
   remoteVideo.onloadedmetadata = function(){
     photo.width = photoContextW = remoteVideo.videoWidth;
