@@ -567,7 +567,9 @@ function maybeStart() {
   if (!isStarted && typeof localStream !== 'undefined' && isChannelReady) {
     console.log('>>>>>> creating peer connection');
     createPeerConnection();
-    pc.addStream(localStream);
+    localStream.getTracks().forEach((track)=>{
+      pc.addTrack(track, localStream)
+    });
     isStarted = true;
     sendBtn.disabled = false;
     snapBtn.disabled = false;
