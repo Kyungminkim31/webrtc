@@ -1,28 +1,57 @@
 'use strict';
 
-var os = require('os');
-var nodeStatic = require('node-static');
+var express = require('express');
 var http = require('http');
 var socketIO = require('socket.io');
+var nodeStatic = require('node-static');
+var os = require('os');
+
+var app = express();
+
+var handlebars = require('express3-handlebars')
+        .create({defaultLayout:'main'});
+app.engine('handlebars', handlebars.engine);
+app.set('view engine', 'handlebars')
+
+var cors = require('cors');
 
 var fileServer = new(nodeStatic.Server)();
-var app = http.createServer(function(req, res) {
-  if(req.url == '/upload'){
-    console.log('you are in upload page  : ');
-    let body = [];
-      req.on('data', (chunk) => {
-      body.push(chunk);
-    }).on('end', () => {
-      body = Buffer.concat(body).toString();
-      console.log(body);
-      res.end(body);
-    });
-  } else {
-    fileServer.serve(req, res);
-  }
-}).listen(8886);
 
-var io = socketIO.listen(app);
+app.use(cors());
+app.use(express.static('public'));
+
+app.set('port', process.env.PORT || 8886);
+
+app.get('/', (req, res)=>{
+  fileServer.serve(req,res);
+});
+
+app.get('/webrtc', function(req, res){
+  res.render('webrtc');
+});
+
+// custom 404 page
+app.use(function(req, res){
+  res.type('text/plain');
+  res.status(404);
+  res.send('404 - Not Found');
+});
+
+// custom 500 page
+app.use(function(err, req, res, next){
+  console.error(err.stack);
+  res.type('text/plain');
+  res.status(500);
+  res.send('500 - Server Error');
+});
+
+var server = app.listen(app.get('port'), function(){
+  console.log('Express started on http://localhost:' 
+    + app.get('port') 
+    + '; press Ctrl - C to terminate');
+});
+
+var io = socketIO.listen(server);
 io.sockets.on('connection', function(socket) {
   console.log(socket.id + ' is connected.');
   // convenience function to log server messages on the client

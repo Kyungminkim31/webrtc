@@ -1,0 +1,83 @@
+<form method="post" accept-charset="UTF-8" name="uploadForm">
+	<input name="userId" type="hidden" id="userId">
+</form>
+
+<div id="title">
+<h1>Eyelog Remote Monitoring Board</h1>
+<p>Web rtc web client</p>
+</div> 
+<!-- menu -->
+<div id="buttonMenu">
+	<button id="uploadVideoBtn">Upload Video</button>
+	<button id="connectBtn">Connect</button>
+	<button id="playBtn">Play</button>
+	<button id="download">Download</button>
+	<button id="stopBtn">Stop</button>
+	<div id="loader" class="loader"></div>
+	<button id="pickingBtn">Picking</button>
+	<button id="recordBtn">Record</button>
+	<button id="snapBtn">Snap</button>
+	<button id="uploadBtn">Upload</button>
+	<button id="hangupBtn">hangup</button>
+</div>
+<hr>
+<!-- videos -->
+<div id="videos">
+	<h2>Previews </h2>
+	<div class="gridContainer">
+	  <!-- local column -->
+	  <div class="gridItem">
+			<span>Local</span>
+			<video id="localVideo" autoplay muted></video>
+	  </div>
+	  <!-- remote column -->
+	  <div class="gridItem">
+			<span>Remote</span>
+			<video id="remoteVideo" autoplay></video>
+	 	</div>
+	  <div class="gridItem">
+			<span>Snapshot</span>
+			<canvas id="photo"></canvas>
+	  </div>
+	  <div class="gridItem">
+	   	<span>Record Preview</span>
+	   	<video id="recordedVideo"></video>
+	  </div>
+	</div>
+</div>
+<hr>
+<div id="statusContainer">
+	<h2>Picking Frames</h2>
+	<div id="scrollCanvas"></div>
+</div>
+<hr>
+<div>
+  <h2>Chat</h2>
+	<!-- text -->
+	<div class="recieveTextDiv">
+		<textarea id="dataChannelReceive" disabled></textarea>
+	</div>
+
+	<!-- sendTextArea -->
+	<div class="sendTextDivContainer">
+		<div>
+			<input id="dataChannelSend"></input>
+		</div>
+		<div>
+			<button id="sendBtn">Send</button>
+		</div>
+	</div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<script src="/js/main.js"></script>
+
+<div id="footer">
+<p>
+  © KKim Studio 2020
+</p>
+<p>
+ a picture by <a style="background-color:black;color:white;text-decoration:none;padding:4px 6px;font-family:-apple-system, BlinkMacSystemFont, &quot;San Francisco&quot;, &quot;Helvetica Neue&quot;, Helvetica, Ubuntu, Roboto, Noto, &quot;Segoe UI&quot;, Arial, sans-serif;font-size:12px;font-weight:bold;line-height:1.2;display:inline-block;border-radius:3px" href="https://unsplash.com/@ntidbury?utm_medium=referral&amp;utm_campaign=photographer-credit&amp;utm_content=creditBadge" target="_blank" rel="noopener noreferrer" title="Download free do whatever you want high-resolution photos from Niklas Tidbury"><span style="display:inline-block;padding:2px 3px"><svg xmlns="http://www.w3.org/2000/svg" style="height:12px;width:auto;position:relative;vertical-align:middle;top:-2px;fill:white" viewBox="0 0 32 32"><title>unsplash-logo</title><path d="M10 9V0h12v9H10zm12 5h10v18H0V14h10v9h12v-9z"></path></svg></span><span style="display:inline-block;padding:2px 3px">Niklas Tidbury</span></a>
+</p>
+</div>
