@@ -454,6 +454,8 @@ function viewMessage(){
 }
 
 /////////////////////////////////////////////
+// socket signalling procedures
+/////////////////////////////////////////////
 var room = 'foo';
 // Could prompt for room name:
 // room = prompt('Enter room name:');
@@ -474,7 +476,7 @@ function onConnect(){
 function initSocketMessaging(){
   if (room !== '') {
     socket.emit('create or join', room);
-    console.log('Attempted to create or  join room', room);
+    console.log('Attempted to create or join room', room);
 
     socket.on('created', function(room) {
       console.log('a signaling server just created room ' + room);
@@ -650,7 +652,10 @@ function handleCreateOfferError(event) {
 
 function doCall() {
   console.log('Sending offer to peer');
-  pc.createOffer(setLocalAndSendMessage, handleCreateOfferError);
+  pc.createOffer().then(
+    setLocalAndSendMessage, 
+    handleCreateOfferError
+  );
 }
 
 function doAnswer() {
