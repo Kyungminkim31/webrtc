@@ -43,6 +43,7 @@ var loader = document.getElementById('loader');
 var connectBtn = document.getElementById('connectBtn');
 
 var uploadVideoBtn = document.getElementById('uploadVideoBtn');
+uploadVideoBtn.style.visibility = 'hidden';
 
 var receiveChannel;
 var sendChannel;
@@ -186,7 +187,6 @@ function uploadMultiFrames(){
   xhr = new XMLHttpRequest();
   xhr.onreadystatechange = viewMessage;
   xhr.open('POST', 'http://node.visionconnect.co.kr:4000/uploadsx', true);
-
   xhr.upload.onprogress = function(e) {
     if(e.lengthComputable){
       var percentComplete = (e.loaded/e.total) * 100;

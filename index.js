@@ -22,13 +22,20 @@ app.use(express.static('public'));
 
 app.set('port', process.env.PORT || 8886);
 
-app.get('/', (req, res)=>{
-  fileServer.serve(req,res);
-});
-
 app.get('/webrtc', function(req, res){
   res.render('webrtc');
 });
+
+/////////////// start - Test Router ////////
+app.get('/multiPeer', function(req,res){
+  res.render('multiPeer');
+});
+
+app.get('/multiRooms', function(req,res){
+  res.render('multiRooms');
+});
+
+/////////////// End - Test Router ////////
 
 // custom 404 page
 app.use(function(req, res){
@@ -118,4 +125,61 @@ io.sockets.on('connection', function(socket) {
     }
   });
 
+  //////////////////////////////////////////////////////////
+  // multiple room management experiment #01
+  // author : Kyungmin Kim
+  // date : 04 Mar. 2020
+  //////////////////////////////////////////////////////////
+
+  var roomNames = [];
+  const ROOM_NAME_PREFIX = 'room';
+  var currentRoomsArr = [];
+
+  // create rooms for initiation
+  socket.on('createRooms', function(roomCount){
+    console.log(socket.id + ' send createRooms');
+    
+    // removing socket.id because of having only rooms
+    Object.keys(io.sockets.adapter.rooms).forEach(element => {
+      if(element !== socket.id){
+        currentRoomsArr.push(element);
+      }
+    });  
+
+    var tempRoomName;
+
+    // 요청받은 숫자만큼 새로이 방을 만들고 만든 방에 대한 이름배열 값을 다시 클라이언트로 쏴준다.
+    if(currentRoomsArr.length === 0) {
+      for(var i = 0; i < roomCount; i++){
+        tempRoomName = ROOM_NAME_PREFIX + i.toString().padStart(2,'0');
+        roomNames.push(tempRoomName);
+        socket.join(tempRoomName);
+      }
+      socket.emit('createdRooms',roomNames);
+      currentRoomsArr = roomNames;
+      console.log(io.sockets.adapter.rooms);
+
+    } else {
+      log('Client ID ' + socket.id + ' failed to create rooms');
+      log('Server is having already plenty of rooms');
+    }
+  });
+
+  // 입장 가능한 방리스트를 보여준다.
+  socket.on('getRoomsAvailableList', function(){
+    console.debug('get message getRoomsAvailableList');
+    let clientsInRoom;
+    let numClients;
+
+    if(currentRoomsArr){
+      currentRoomsArr.forEach(element =>{
+        clientsInRoom = io.sockets.adapter.rooms[element];
+        numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0;
+      });
+
+      socket.emit('gotRoomsAvailableList', currentRoomsArr); 
+    } else {
+      socket.emit('gotRoomsAvailableList', 0); 
+    } 
+  });
 });
